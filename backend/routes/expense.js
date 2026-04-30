@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const Expense = require('../models/Expense');
+const GasCylinder = require('../models/GasCylinder');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isManager } = require('../middleware/auth');
 
@@ -66,8 +67,34 @@ router.get('/', auth, requireMess, async (req, res) => {
     }
 
     const expenses = await Expense.find(query).populate('addedBy', 'username').sort({ date: -1 });
-    const totalSpent = expenses.reduce((sum, e) => sum + e.price, 0);
-    res.json({ expenses, totalSpent });
+
+    // Include Paid Gas Cylinders
+    let gasQuery = { messId: req.user.messId, isPaid: true };
+    
+    // We filter gas by buyingDate's month/year or paymentDate's month/year? 
+    // Usually, expenses are recorded when they impact the budget.
+    // Let's check both or follow the dashboard logic (which uses buyingDate for the month view).
+    
+    const gasCylinders = await GasCylinder.find(gasQuery).populate('addedBy', 'username');
+    
+    const gasExpenses = gasCylinders.filter(g => {
+      const d = new Date(g.buyingDate);
+      return (d.getMonth() + 1) === month && d.getFullYear() === year;
+    }).map(g => ({
+      _id: g._id,
+      date: g.buyingDate,
+      itemName: 'Gas Cylinder 🔥',
+      price: g.price,
+      mealType: 'other',
+      notes: `Bought: ${new Date(g.buyingDate).toLocaleDateString('en-IN')}${g.paymentDate ? `, Paid: ${new Date(g.paymentDate).toLocaleDateString('en-IN')}` : ''}`,
+      addedBy: g.addedBy,
+      isGas: true
+    }));
+
+    const combined = [...expenses, ...gasExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const totalSpent = combined.reduce((sum, e) => sum + e.price, 0);
+
+    res.json({ expenses: combined, totalSpent });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

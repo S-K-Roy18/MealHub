@@ -9,7 +9,10 @@ const MONTHS = [
   { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' },
 ];
 
+import { useAuth } from '../context/AuthContext';
+
 export default function ManagerChange() {
+  const { refreshUser } = useAuth();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -39,6 +42,7 @@ export default function ManagerChange() {
     setLoading(true); setError(''); setSuccess('');
     try {
       await api.put('/mess/set-manager', { memberId, month, year });
+      await refreshUser();
       setSuccess(`✅ Manager updated for ${MONTHS.find(m => m.value === month)?.label} ${year}`);
       fetchData();
       setTimeout(() => setSuccess(''), 4000);

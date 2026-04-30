@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Download, Plus, Flame, TrendingUp } from 'lucide-react';
+import { Download, Plus, Flame, TrendingUp, X, Trash2 } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -15,6 +15,8 @@ export default function Dashboard() {
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
+
+  const [gasForm, setGasForm] = useState({ show: false, price: '', isPaid: true, buyingDate: new Date().toISOString().split('T')[0] });
 
   useEffect(() => { fetchData(); }, []);
 
@@ -41,11 +43,35 @@ export default function Dashboard() {
     }
   };
 
-  const addGas = async (remark) => {
+  const handleAddGas = async (e) => {
+    e.preventDefault();
     try {
-      await api.post('/gas', { date: new Date().toISOString(), remark });
+      await api.post('/gas', { 
+        buyingDate: gasForm.buyingDate, 
+        price: Number(gasForm.price), 
+        isPaid: gasForm.isPaid 
+      });
+      setGasForm({ ...gasForm, show: false, price: '' });
       fetchData();
     } catch {}
+  };
+
+  const markGasPaid = async (id) => {
+    try {
+      await api.put(`/gas/${id}/pay`);
+      fetchData();
+    } catch {}
+  };
+
+  const deleteGas = async (id) => {
+    if (!id) return;
+    if (!window.confirm('do you want to delete this gas entry?')) return;
+    try {
+      await api.delete(`/gas/${id.toString()}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete gas entry');
+    }
   };
 
   const handlePDF = async () => {
@@ -66,6 +92,12 @@ export default function Dashboard() {
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  };
+
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
   const totalCollected = data?.money?.totalCollected || 0;
@@ -84,16 +116,16 @@ export default function Dashboard() {
   const moneyByMember = {};
   (data?.money?.entries || []).forEach(e => {
     const id = e.memberId?._id?.toString() || e.memberId?.toString();
-    if (id) moneyByMember[id] = (moneyByMember[id] || 0) + e.amount;
+    if (id) moneyByMember[id] = (moneyByMember[id] || 0) + (e.amount || 0);
   });
 
   const statCards = [
-    { icon: '💰', label: 'Total Collected', value: `₹${totalCollected.toLocaleString('en-IN')}`, color: '#22c55e' },
-    { icon: '💸', label: 'Total Spent', value: `₹${totalSpent.toLocaleString('en-IN')}`, color: '#ef4444' },
-    { icon: '🪙', label: 'Balance', value: `₹${balance.toLocaleString('en-IN')}`, color: balance >= 0 ? '#22c55e' : '#ef4444' },
-    { icon: '🍽', label: 'Total Meals', value: totalMessMeals, color: '#f59e0b' },
-    { icon: '📊', label: 'Per Meal Cost', value: `₹${perMealCost.toFixed(2)}`, color: '#7c6bff' },
-    { icon: '🔥', label: 'Gas Cylinders', value: gasCylinders.length, color: '#ff6b9d' },
+    { icon: '💰', label: 'Total Collected', value: `₹${(totalCollected || 0).toLocaleString('en-IN')}`, color: '#22c55e' },
+    { icon: '💸', label: 'Total Spent', value: `₹${(totalSpent || 0).toLocaleString('en-IN')}`, color: '#ef4444' },
+    { icon: '🪙', label: 'Balance', value: `₹${(balance || 0).toLocaleString('en-IN')}`, color: balance >= 0 ? '#22c55e' : '#ef4444' },
+    { icon: '🍽', label: 'Total Meals', value: totalMessMeals || 0, color: '#f59e0b' },
+    { icon: '📊', label: 'Per Meal Cost', value: `₹${(perMealCost || 0).toFixed(2)}`, color: '#7c6bff' },
+    { icon: '🔥', label: 'Gas Cylinders', value: gasCylinders.length || 0, color: '#ff6b9d' },
   ];
 
   return (
@@ -122,9 +154,11 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={handlePDF} id="download-pdf-btn">
-          <Download size={15} /> PDF
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-secondary btn-sm" onClick={handlePDF} id="download-pdf-btn">
+            <Download size={15} /> PDF
+          </button>
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -177,55 +211,102 @@ export default function Dashboard() {
             <span className="badge badge-accent">{gasCylinders.length} this month</span>
           </div>
           {isManager && (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                id="gas-paid-btn"
-                className="btn btn-sm"
-                style={{ background: 'var(--success-bg)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.3)' }}
-                onClick={() => addGas('paid')}
-              >
-                <Plus size={14} /> Paid
-              </button>
-              <button
-                id="gas-due-btn"
-                className="btn btn-sm"
-                style={{ background: 'var(--warning-bg)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.3)' }}
-                onClick={() => addGas('due')}
-              >
-                <Plus size={14} /> Due
-              </button>
-            </div>
+            <button
+              id="add-gas-toggle-btn"
+              className="btn btn-primary btn-sm"
+              onClick={() => setGasForm(f => ({ ...f, show: !f.show }))}
+            >
+              {gasForm.show ? <X size={14} /> : <Plus size={14} />} {gasForm.show ? 'Cancel' : 'Add Cylinder'}
+            </button>
           )}
         </div>
+
+        {/* Add Gas Form */}
+        {gasForm.show && (
+          <div className="card mb-16 fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent)' }}>
+            <form onSubmit={handleAddGas} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', alignItems: 'flex-end' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Buying Date</label>
+                <input type="date" className="form-input" style={{ padding: '6px 10px' }} 
+                  value={gasForm.buyingDate} onChange={e => setGasForm(f => ({ ...f, buyingDate: e.target.value }))} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Price (₹)</label>
+                <input type="number" className="form-input" style={{ padding: '6px 10px' }} placeholder="Price"
+                  value={gasForm.price} onChange={e => setGasForm(f => ({ ...f, price: e.target.value }))} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Status</label>
+                <select className="form-input" style={{ padding: '6px 10px' }} 
+                  value={gasForm.isPaid ? 'paid' : 'due'} onChange={e => setGasForm(f => ({ ...f, isPaid: e.target.value === 'paid' }))}>
+                  <option value="paid">Paid</option>
+                  <option value="due">Due</option>
+                </select>
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ height: '38px' }}>Save</button>
+            </form>
+          </div>
+        )}
 
         {gasCylinders.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '20px 0' }}>
             🔥 No gas cylinders recorded this month
-            {isManager && <><br /><span style={{ fontSize: '0.8rem' }}>Click + Paid or + Due above to add one</span></>}
+            {isManager && <><br /><span style={{ fontSize: '0.8rem' }}>Click + Add Cylinder above to record one</span></>}
           </p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {gasCylinders.map((g, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 14px',
+                padding: '12px 16px',
                 background: 'var(--bg-secondary)',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '1.1rem' }}>🔥</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px', height: '40px',
+                    background: g.isPaid ? 'var(--success-bg)' : 'var(--warning-bg)',
+                    borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.2rem',
+                  }}>🔥</div>
                   <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>Cylinder #{gasCylinders.length - i}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {new Date(g.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {g.addedBy?.username && ` · by ${g.addedBy.username}`}
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ₹{g.price} 
+                      <span className={`badge ${g.isPaid ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.65rem' }}>
+                        {g.isPaid ? 'Paid' : 'Due'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>📅 Bought: {formatDate(g.buyingDate) || formatDate(g.date) || 'N/A'}</span>
+                      {g.isPaid && (g.paymentDate || g.date) && (
+                        <span>💸 Paid: {formatDate(g.paymentDate || g.date) || 'N/A'}</span>
+                      )}
                     </div>
                   </div>
                 </div>
-                <span className={`badge ${g.remark === 'paid' ? 'badge-success' : 'badge-warning'}`}>
-                  {g.remark === 'paid' ? '✓ Paid' : '⏳ Due'}
-                </span>
+                
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {isManager && !g.isPaid && (
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                      onClick={() => markGasPaid(g._id)}
+                    >
+                      Mark Paid
+                    </button>
+                  )}
+                  {isManager && (
+                    <button 
+                      className="btn btn-sm" 
+                      style={{ padding: '4px 6px', color: '#ff4444', border: '1px solid #ff444422' }}
+                      onClick={() => deleteGas(g._id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

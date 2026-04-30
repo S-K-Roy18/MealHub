@@ -77,14 +77,17 @@ export default function Members() {
   };
 
   const handleRemove = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to remove ${name} from the mess?`)) return;
+    if (!id || !name) return;
+    if (!window.confirm(`do you want to remove "${name}"?`)) return;
     try {
-      await api.delete(`/mess/remove-member/${id}`);
+      await api.delete(`/mess/remove-member/${id.toString()}`);
       setSuccess(`🗑️ ${name} removed from mess`);
       fetchData();
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to remove member');
+      const msg = err.response?.data?.message || 'Failed to remove member';
+      setError(msg);
+      alert(msg);
     }
   };
 
