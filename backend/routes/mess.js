@@ -117,6 +117,53 @@ router.put('/set-manager', auth, requireMess, isAdmin, async (req, res) => {
   }
 });
 
+// PUT /api/mess/update-member/:id — admin updates a member
+router.put('/update-member/:id', auth, requireMess, isAdmin, async (req, res) => {
+  try {
+    const { username, mobile, gmail } = req.body;
+    if (!username || !mobile || !gmail) return res.status(400).json({ message: 'All fields required' });
+
+    const memberId = req.params.id;
+    // Ensure the member is actually in this mess
+    if (!req.mess.members.includes(memberId)) {
+      return res.status(400).json({ message: 'Member not found in this mess' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(memberId, { 
+      username, 
+      mobile, 
+      gmail: gmail.toLowerCase() 
+    }, { new: true });
+
+    res.json({ message: 'Member updated', member: updatedUser });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE /api/mess/remove-member/:id — admin removes a member
+router.delete('/remove-member/:id', auth, requireMess, isAdmin, async (req, res) => {
+  try {
+    const memberId = req.params.id;
+    
+    // Cannot remove self (admin)
+    if (memberId === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Admin cannot remove themselves' });
+    }
+
+    // Remove from mess members array
+    req.mess.members = req.mess.members.filter(m => m.toString() !== memberId);
+    await req.mess.save();
+
+    // Unlink user from mess
+    await User.findByIdAndUpdate(memberId, { messId: null });
+
+    res.json({ message: 'Member removed from mess' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/mess/manager-history — get all monthly managers with per meal cost
 router.get('/manager-history', auth, requireMess, async (req, res) => {
   try {
