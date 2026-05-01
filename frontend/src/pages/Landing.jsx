@@ -91,7 +91,7 @@ export default function Landing() {
             lineHeight: 1.6,
             marginBottom: '40px',
           }}>
-            The #1 platform for shared kitchen tracking. Automate expenses, calculate meal costs instantly, and eliminate payment disputes forever.
+            The #1 platform for shared kitchen tracking. Built for modern shared living. Track meals, manage expenses, and simplify mess operations effortlessly.
           </p>
 
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
@@ -233,7 +233,7 @@ export default function Landing() {
           <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>MealHub</span>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          © {new Date().getFullYear()} MealHub Mess Management System. Built for teams, students, & officemates. By SURYA.
+          © {new Date().getFullYear()} MealHub Mess Management System. Built for shared living. By SURYA.
         </p>
       </footer>
     </div>
