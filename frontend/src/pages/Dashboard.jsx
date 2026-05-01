@@ -64,12 +64,14 @@ export default function Dashboard() {
   };
 
   const deleteGas = async (id) => {
+    console.log('Delete gas requested for ID:', id);
     if (!id) return;
-    if (!window.confirm('do you want to delete this gas entry?')) return;
+    if (!confirm('do you want to delete this gas entry?')) return;
     try {
       await api.delete(`/gas/${id.toString()}`);
       fetchData();
     } catch (err) {
+      console.error('Delete gas failed:', err);
       alert(err.response?.data?.message || 'Failed to delete gas entry');
     }
   };
@@ -299,11 +301,15 @@ export default function Dashboard() {
                   )}
                   {isManager && (
                     <button 
+                      id={`delete-gas-${g._id}`}
                       className="btn btn-sm" 
-                      style={{ padding: '4px 6px', color: '#ff4444', border: '1px solid #ff444422' }}
-                      onClick={() => deleteGas(g._id)}
+                      style={{ padding: '4px 6px', color: '#ff4444', border: '1px solid #ff444422', position: 'relative', zIndex: 10, cursor: 'pointer' }}
+                      onClick={(e) => {
+                        console.log('Gas Delete button clicked for ID:', g._id);
+                        deleteGas(g._id);
+                      }}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={14} style={{ pointerEvents: 'none' }} />
                     </button>
                   )}
                 </div>

@@ -4,7 +4,7 @@ const notificationSchema = new mongoose.Schema({
   messId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mess', required: true },
   type: {
     type: String,
-    enum: ['expense_added', 'expense_backdated', 'expense_edited', 'meal_added', 'money_added', 'gas_added', 'gas_paid', 'gas_deleted', 'manager_changed'],
+    enum: ['expense_added', 'expense_backdated', 'expense_edited', 'meal_added', 'money_added', 'gas_added', 'gas_paid', 'gas_deleted', 'manager_changed', 'member_removed'],
     required: true,
   },
   message: { type: String, required: true },

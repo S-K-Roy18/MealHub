@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const Mess = require('../models/Mess');
 const User = require('../models/User');
+const MealEntry = require('../models/MealEntry');
+const MoneyEntry = require('../models/MoneyEntry');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isAdmin } = require('../middleware/auth');
 
@@ -151,14 +153,34 @@ router.delete('/remove-member/:id', auth, requireMess, isAdmin, async (req, res)
       return res.status(400).json({ message: 'Admin cannot remove themselves' });
     }
 
+    const userToRemove = await User.findById(memberId);
+    if (!userToRemove) return res.status(404).json({ message: 'User not found' });
+
     // Remove from mess members array
     req.mess.members = req.mess.members.filter(m => m.toString() !== memberId);
     await req.mess.save();
 
+    // 1. Delete all Meal Entries (pull from entries array in all documents of this mess)
+    await MealEntry.updateMany(
+      { messId: req.mess._id },
+      { $pull: { entries: { memberId: memberId } } }
+    );
+
+    // 2. Delete all Money Entries (Given money)
+    await MoneyEntry.deleteMany({ messId: req.mess._id, memberId: memberId });
+
+    // 3. Create Notification
+    await Notification.create({
+      messId: req.mess._id,
+      type: 'member_removed',
+      message: `${userToRemove.username} was removed from the mess by manager`,
+      addedBy: req.user._id,
+    });
+
     // Unlink user from mess
     await User.findByIdAndUpdate(memberId, { messId: null });
 
-    res.json({ message: 'Member removed from mess' });
+    res.json({ message: 'Member removed and all data cleaned up' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

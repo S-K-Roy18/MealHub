@@ -7,8 +7,11 @@ const TYPE_ICONS = {
   expense_edited: '🔴',
   meal_added: '🟢',
   money_added: '🟢',
-  gas_added: '🟢',
-  manager_changed: '🔵',
+  gas_added: '🔥',
+  gas_paid: '✅',
+  gas_deleted: '🗑️',
+  manager_changed: '🔄',
+  member_removed: '🚫',
 };
 
 const TYPE_LABELS = {
@@ -18,7 +21,10 @@ const TYPE_LABELS = {
   meal_added: 'Meal Entry',
   money_added: 'Money Added',
   gas_added: 'Gas Added',
+  gas_paid: 'Gas Paid',
+  gas_deleted: 'Gas Entry Deleted',
   manager_changed: 'Manager Changed',
+  member_removed: 'Member Removed',
 };
 
 export default function Notifications() {

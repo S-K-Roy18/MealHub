@@ -77,14 +77,16 @@ export default function Members() {
   };
 
   const handleRemove = async (id, name) => {
+    console.log('Remove member requested:', { id, name });
     if (!id || !name) return;
-    if (!window.confirm(`do you want to remove "${name}"?`)) return;
+    if (!confirm(`do you want to remove "${name}"?`)) return;
     try {
       await api.delete(`/mess/remove-member/${id.toString()}`);
       setSuccess(`🗑️ ${name} removed from mess`);
       fetchData();
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
+      console.error('Remove member failed:', err);
       const msg = err.response?.data?.message || 'Failed to remove member';
       setError(msg);
       alert(msg);
@@ -263,13 +265,17 @@ export default function Members() {
                                 <Edit2 size={14} />
                               </button>
                               {!isMe && (
-                                <button 
-                                  className="btn btn-sm" 
-                                  style={{ padding: '4px 8px', color: '#ff4444', border: '1px solid #ff444422' }}
-                                  onClick={() => handleRemove(m._id, m.username)}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                  <button 
+                                    id={`remove-member-${m._id}`}
+                                    className="btn btn-sm" 
+                                    style={{ padding: '4px 8px', color: '#ff4444', border: '1px solid #ff444422', position: 'relative', zIndex: 10, cursor: 'pointer' }}
+                                    onClick={() => {
+                                      console.log('Member Remove button clicked for ID:', m._id);
+                                      handleRemove(m._id, m.username);
+                                    }}
+                                  >
+                                    <Trash2 size={14} style={{ pointerEvents: 'none' }} />
+                                  </button>
                               )}
                             </>
                           )}
