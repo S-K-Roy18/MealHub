@@ -65,7 +65,9 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Logo + Mess Name */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🍽</div>
+        <div className="sidebar-logo-icon" style={{ overflow: 'hidden' }}>
+          <img src="/favicon.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
         <div style={{ overflow: 'hidden' }}>
           <div className="sidebar-logo-text">MealHub</div>
           {mess && (
