@@ -8,6 +8,7 @@ const moneyEntrySchema = new mongoose.Schema({
   month: { type: Number, required: true }, // 1-12
   year: { type: Number, required: true },
   addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  paymentMode: { type: String, enum: ['Cash', 'Online'], default: 'Cash' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('MoneyEntry', moneyEntrySchema);

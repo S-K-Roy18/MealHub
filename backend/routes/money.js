@@ -6,7 +6,7 @@ const { auth, requireMess, isManager } = require('../middleware/auth');
 // POST /api/money — add money entry (manager only)
 router.post('/', auth, requireMess, isManager, async (req, res) => {
   try {
-    const { memberId, amount, date } = req.body;
+    const { memberId, amount, date, paymentMode } = req.body;
     if (!memberId || !amount || !date) return res.status(400).json({ message: 'memberId, amount, date required' });
 
     const entryDate = new Date(date);
@@ -21,13 +21,14 @@ router.post('/', auth, requireMess, isManager, async (req, res) => {
       month,
       year,
       addedBy: req.user._id,
+      paymentMode: paymentMode || 'Cash'
     });
 
     const populated = await MoneyEntry.findById(entry._id).populate('memberId', 'username');
     await Notification.create({
       messId: req.user.messId,
       type: 'money_added',
-      message: `₹${amount} money added for ${populated.memberId.username}`,
+      message: `₹${amount} (${paymentMode || 'Cash'}) added for ${populated.memberId.username}`,
       addedBy: req.user._id,
     });
 

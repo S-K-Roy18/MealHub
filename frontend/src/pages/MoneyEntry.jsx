@@ -7,7 +7,7 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 export default function MoneyEntry() {
   const [members, setMembers] = useState([]);
   const [entries, setEntries] = useState([]);
-  const [form, setForm] = useState({ memberId: '', amount: '', date: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState({ memberId: '', amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,10 +85,19 @@ export default function MoneyEntry() {
                 value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
             </div>
 
-            <div className="form-group mb-24">
+            <div className="form-group mb-16">
               <label className="form-label">Date</label>
               <input id="money-date" type="date" className="form-input"
                 value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+            </div>
+
+            <div className="form-group mb-24">
+              <label className="form-label">Payment Mode</label>
+              <select id="money-mode" className="form-input" value={form.paymentMode}
+                onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value }))}>
+                <option value="Cash">Cash</option>
+                <option value="Online">Online</option>
+              </select>
             </div>
 
             <button id="money-submit-btn" type="submit" className="btn btn-primary btn-full" disabled={loading}>
@@ -106,7 +115,7 @@ export default function MoneyEntry() {
           <div className="table-wrapper">
             <table>
               <thead>
-                <tr><th>Member</th><th>Amount</th><th>Date</th></tr>
+                <tr><th>Member</th><th>Amount</th><th>Mode</th><th>Date</th></tr>
               </thead>
               <tbody>
                 {entries.length === 0 ? (
@@ -115,6 +124,7 @@ export default function MoneyEntry() {
                   <tr key={i}>
                     <td style={{ fontWeight: 600 }}>{e.memberId?.username}</td>
                     <td><span className="amount-positive">₹{e.amount.toLocaleString()}</span></td>
+                    <td><span className={`badge ${e.paymentMode === 'Online' ? 'badge-info' : 'badge-warning'}`} style={{fontSize: '0.7rem'}}>{e.paymentMode || 'Cash'}</span></td>
                     <td style={{ color: 'var(--text-secondary)' }}>
                       {new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                     </td>
