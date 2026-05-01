@@ -1,118 +1,100 @@
 # 🍽 MealHub – Eat Together, Manage Smarter
 
-A full-stack mess management web application with role-based access control.
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://meal-hub-gcmc.vercel.app/)
+[![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
-## 📁 Project Structure
+MealHub is a **premium, high-end mess management system** designed for modern shared living. Built with a stunning **Glassmorphism UI**, it automates complex financial calculations, meal tracking, and expense management for students, professionals, and teammates.
 
+---
+
+## ✨ Features & Highlights
+
+-   🚀 **Stunning UI/UX**: Redesigned with mesh gradients, 3D illustrations, and floating glass cards.
+-   💰 **Smart Financials**: Automatic calculation of "Money Due" and "Extra Paid" per member.
+-   🔥 **Gas & Utility Tracking**: Manage gas cylinder bookings and payments with automated expense history integration.
+-   📱 **Fully Responsive**: Optimized for desktop, tablet, and mobile (Mobile-First approach).
+-   🛡️ **Role-Based Access**: 
+    -   **👑 Admin**: Create mess, manage members, assign monthly managers.
+    -   **🍽 Manager**: Record meals, expenses, and payments for the current month.
+    -   **👤 Member**: View transparency-focused dashboards and personal meal history.
+-   🔔 **Activity Notifications**: Real-time audit logs for all financial and managerial actions.
+-   💳 **Flexible Payments**: Support for **Cash** and **Online** payment tracking.
+
+---
+
+## 📸 Screenshots
+
+### 🖥️ Premium Landing Page
+![Hero Section](./screenshots/hero.png)
+
+### 📊 Modern Management Dashboard
+![Dashboard](./screenshots/dashboard.png)
+
+### 📱 Mobile Optimized
+![Mobile View](./screenshots/mobile.png)
+
+---
+
+## 💡 Smart Calculations
+
+MealHub eliminates manual errors with automated formulas:
+
+```
+Per Meal Cost     = Total Monthly Spent / Total Mess Meals
+Member Total Cost = (Member's Total Meals) × (Per Meal Cost)
+Member Balance    = (Total Money Given) - (Member Total Cost)
+
+• Balance > 0 (+) → Green → Member paid extra
+• Balance < 0 (-) → Red   → Member owes money
+```
+
+---
+
+## 🚀 Installation & Setup
+
+### 📁 Project Structure
 ```
 MealHub/
-├── frontend/     # React + Vite
-└── backend/      # Node.js + Express + MongoDB
+├── frontend/     # React (Vite) + Vanilla CSS
+└── backend/      # Node.js + Express + MongoDB Atlas
 ```
-
-## 🚀 Quick Start
 
 ### 1. Backend Setup
-
-```bash
-cd backend
-```
-
-**Create `.env` file** (copy from `.env.example` and fill in):
-```env
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/mealhub
-JWT_SECRET=your_secret_key_here
-PORT=5000
-CLIENT_URL=http://localhost:5173
-```
-
-```bash
-npm install
-npm run dev   # starts on port 5000
-```
+1. `cd backend`
+2. `npm install`
+3. Create `.env` (use `.env.example` as a template):
+   ```env
+   MONGODB_URI=your_mongodb_atlas_uri
+   JWT_SECRET=your_jwt_secret
+   PORT=5000
+   CLIENT_URL=http://localhost:5173
+   ```
+4. `npm run dev`
 
 ### 2. Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev   # starts on port 5173
-```
-
-Open → **http://localhost:5173**
-
----
-
-## 🛡 User Roles
-
-| Role | Who | Can Do |
-|------|-----|--------|
-| 👑 Admin | Mess creator | Everything + change manager |
-| 🍽 Manager | Monthly assigned | Add expenses, meals, money, gas |
-| 👤 Member | Everyone else | View all data |
-
-> Admin can also be Manager if assigned for that month.
-
----
-
-## 📱 Pages
-
-| Page | Route | Access |
-|------|-------|--------|
-| Landing | `/` | Public |
-| Login | `/login` | Public |
-| Sign Up | `/signup` | Public |
-| Create Mess | `/create-mess` | After signup |
-| Dashboard | `/dashboard` | All members |
-| Money Entry | `/money-entry` | Manager only |
-| Money Collected | `/money-collected` | All |
-| Expense Entry | `/expense-entry` | Manager only |
-| Expense History | `/expense-history` | All |
-| Meal Entry | `/meal-entry` | Manager only |
-| Meal Tracking | `/meal-tracking` | All |
-| Manager Change | `/manager-change` | Admin only |
-| Members | `/members` | All |
-| Notifications | `/notifications` | All |
-| Profile | `/profile` | All |
-
----
-
-## 💡 Key Formulas
-
-```
-Total Money Collected = Sum of all money entries
-Total Money Spent     = Sum of all expense entries
-Available Balance     = Collected - Spent
-Per Meal Cost         = Total Spent / Total Mess Meals
-Total Meals (member)  = Lunches + Dinners
-Money Due             = Money Given - (Own Meals × Per Meal Cost)
-  Positive (+) = Green = member paid extra
-  Negative (-) = Red   = member owes money
-```
-
----
-
-## 🗄 MongoDB Atlas Setup
-
-1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. Add a database user
-3. Whitelist your IP (or `0.0.0.0/0` for development)
-4. Copy the connection string to `backend/.env`
+1. `cd frontend`
+2. `npm install`
+3. Create `.env`:
+   ```env
+   VITE_API_URL=http://localhost:5000/api
+   ```
+4. `npm run dev`
 
 ---
 
 ## 🌐 Deployment
 
-### Frontend → Vercel
-```bash
-cd frontend
-npm run build
-# Upload dist/ to Vercel
-```
-Set `VITE_API_URL` env variable to your backend URL.
+-   **Frontend**: Hosted on **Vercel** ([meal-hub-gcmc.vercel.app](https://meal-hub-gcmc.vercel.app/))
+-   **Backend**: Hosted on **Render**
+-   **Database**: **MongoDB Atlas**
 
-### Backend → Render
-- Create a Web Service pointing to `/backend`
-- Set all env variables from `.env`
-- Build command: `npm install`
-- Start command: `npm start`
+---
+
+## 🛠 Built By
+Built with ❤️ for shared living communities by **SURYA**.
+
+---
+
+© {new Date().getFullYear()} MealHub Mess Management System.
