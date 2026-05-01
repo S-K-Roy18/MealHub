@@ -87,6 +87,7 @@ MealHub/
 ## 🌐 Deployment
 
 -   **Frontend**: Hosted on **Vercel** ([meal-hub-gcmc.vercel.app](https://meal-hub-gcmc.vercel.app/))
+    -   *Note*: A `vercel.json` file is included in the `frontend` folder to handle client-side routing and prevent 404 errors on page refresh.
 -   **Backend**: Hosted on **Render**
 -   **Database**: **MongoDB Atlas**
 
