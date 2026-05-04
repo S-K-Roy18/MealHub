@@ -57,8 +57,14 @@ export default function MoneyCollected() {
                   <td>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {g.entries.map((e, j) => (
-                        <span key={j} className="badge badge-success">
-                          ₹{e.amount.toLocaleString()} [{new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}]
+                        <span key={j} className="badge badge-success" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          ₹{e.amount.toLocaleString()} 
+                          <span style={{ opacity: 0.8, fontSize: '0.65rem', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '4px' }}>
+                            {e.paymentMode || 'Cash'}
+                          </span>
+                          <span style={{ opacity: 0.6, fontSize: '0.6rem' }}>
+                            {new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                          </span>
                         </span>
                       ))}
                     </div>
