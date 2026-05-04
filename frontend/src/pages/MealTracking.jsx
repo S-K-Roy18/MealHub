@@ -125,9 +125,11 @@ export default function MealTracking() {
                         return (
                           <td key={m._id} style={{ textAlign: 'center' }}>
                             {(L || D) ? (
-                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {L ? '☀️L' : '—'}{D ? ' 🌙D' : ''}
-                              </span>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'center', gap: '2px' }}>
+                                <span>{L ? '☀️L' : '—'}</span>
+                                <span style={{ opacity: 0.4 }}>,</span>
+                                <span>{D ? '🌙D' : '—'}</span>
+                              </div>
                             ) : (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
                             )}
