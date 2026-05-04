@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import api from '../api/axios';
-import { AlertCircle, CheckCircle, PlusCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, PlusCircle, ShoppingCart } from 'lucide-react';
 
 const MEAL_TYPES = ['lunch', 'dinner', 'other'];
 
@@ -35,7 +35,9 @@ export default function ExpenseEntry() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>🛒 Expense Entry</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ShoppingCart size={28} color="var(--accent)" /> Expense Entry
+        </h1>
         <p>Log daily mess expenses</p>
       </div>
 

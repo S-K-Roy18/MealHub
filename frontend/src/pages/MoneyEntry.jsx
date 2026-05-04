@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { AlertCircle, CheckCircle, PlusCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, PlusCircle, Coins } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -53,7 +53,9 @@ export default function MoneyEntry() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>💰 Money Entry</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Coins size={28} color="var(--accent)" /> Money Entry
+        </h1>
         <p>Record money collected from members — {MONTHS[month-1]} {year}</p>
       </div>
 

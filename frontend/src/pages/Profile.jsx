@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../api/axios';
-import { User, Smartphone, Mail, Sun, Moon, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Smartphone, Mail, Sun, Moon, CheckCircle, AlertCircle, Shield, Save, Settings } from 'lucide-react';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -30,7 +30,9 @@ export default function Profile() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>👤 Profile</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <User size={28} color="var(--accent)" /> Profile
+        </h1>
         <p>Manage your account settings</p>
       </div>
 
@@ -50,7 +52,7 @@ export default function Profile() {
           </div>
           <h2 style={{ marginBottom: '4px' }}>{user?.username}</h2>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            {user?.isAdmin && <span className="badge badge-warning">👑 Admin</span>}
+            {user?.isAdmin && <span className="badge badge-warning" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Shield size={12} /> Admin</span>}
             <span className="badge badge-info">Mess Member</span>
           </div>
         </div>
@@ -110,14 +112,16 @@ export default function Profile() {
             </div>
 
             <button id="profile-save-btn" type="submit" className="btn btn-primary btn-full" disabled={loading}>
-              {loading ? 'Saving...' : '💾 Save Changes'}
+              {loading ? 'Saving...' : <><Save size={18} /> Save Changes</>}
             </button>
           </form>
         </div>
 
         {/* Theme Toggle */}
         <div className="card">
-          <h3 style={{ marginBottom: '16px' }}>⚙️ Preferences</h3>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Settings size={18} color="var(--accent)" /> Preferences
+          </h3>
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: '14px 16px',

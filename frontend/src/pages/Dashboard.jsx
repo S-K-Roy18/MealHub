@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Download, Plus, Flame, TrendingUp, X, Trash2 } from 'lucide-react';
+import { Download, Plus, Flame, TrendingUp, X, Trash2, Utensils, Coins, Wallet, CreditCard, BarChart3, ChefHat, User } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -122,12 +122,12 @@ export default function Dashboard() {
   });
 
   const statCards = [
-    { icon: '💰', label: 'Total Collected', value: `₹${(totalCollected || 0).toLocaleString('en-IN')}`, color: '#22c55e' },
-    { icon: '💸', label: 'Total Spent', value: `₹${(totalSpent || 0).toLocaleString('en-IN')}`, color: '#ef4444' },
-    { icon: '🪙', label: 'Balance', value: `₹${(balance || 0).toLocaleString('en-IN')}`, color: balance >= 0 ? '#22c55e' : '#ef4444' },
-    { icon: '🍽', label: 'Total Meals', value: totalMessMeals || 0, color: '#f59e0b' },
-    { icon: '📊', label: 'Per Meal Cost', value: `₹${(perMealCost || 0).toFixed(2)}`, color: '#7c6bff' },
-    { icon: '🔥', label: 'Gas Cylinders', value: gasCylinders.length || 0, color: '#ff6b9d' },
+    { icon: <Coins size={24} />, label: 'Total Collected', value: `₹${(totalCollected || 0).toLocaleString('en-IN')}`, color: '#22c55e' },
+    { icon: <CreditCard size={24} />, label: 'Total Spent', value: `₹${(totalSpent || 0).toLocaleString('en-IN')}`, color: '#ef4444' },
+    { icon: <Wallet size={24} />, label: 'Balance', value: `₹${(balance || 0).toLocaleString('en-IN')}`, color: balance >= 0 ? '#22c55e' : '#ef4444' },
+    { icon: <Utensils size={24} />, label: 'Total Meals', value: totalMessMeals || 0, color: '#f59e0b' },
+    { icon: <BarChart3 size={24} />, label: 'Per Meal Cost', value: `₹${(perMealCost || 0).toFixed(2)}`, color: '#7c6bff' },
+    { icon: <Flame size={24} />, label: 'Gas Cylinders', value: gasCylinders.length || 0, color: '#ff6b9d' },
   ];
 
   return (
@@ -149,8 +149,8 @@ export default function Dashboard() {
             {currentManager && (
               <>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>·</span>
-                <span className="badge badge-accent" style={{ fontSize: '0.72rem' }}>
-                  🍽 Manager: {currentManager.username}
+                <span className="badge badge-accent" style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ChefHat size={12} /> Manager: {currentManager.username}
                 </span>
               </>
             )}
@@ -207,9 +207,9 @@ export default function Dashboard() {
       {/* Gas Section */}
       <div className="card mb-24">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Flame size={18} color="#ff6b9d" />
-            <h3>Gas Cylinders</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Flame size={20} color="#ff6b9d" />
+            <h3 style={{ margin: 0 }}>Gas Cylinders</h3>
             <span className="badge badge-accent">{gasCylinders.length} this month</span>
           </div>
           {isManager && (
@@ -271,8 +271,10 @@ export default function Dashboard() {
                     background: g.isPaid ? 'var(--success-bg)' : 'var(--warning-bg)',
                     borderRadius: '50%',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.2rem',
-                  }}>🔥</div>
+                    color: g.isPaid ? 'var(--success)' : 'var(--warning)',
+                  }}>
+                    <Flame size={20} />
+                  </div>
                   <div>
                     <div style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                       ₹{g.price} 
@@ -322,7 +324,9 @@ export default function Dashboard() {
       {/* Individual Meal Cost Table */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <h3>👤 Individual Meal Cost — {MONTHS[month - 1]} {year}</h3>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <User size={18} color="var(--accent)" /> Individual Meal Cost — {MONTHS[month - 1]} {year}
+          </h3>
           {perMealCost > 0 && (
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
               Per meal: <strong style={{ color: 'var(--accent)' }}>₹{perMealCost.toFixed(2)}</strong>
@@ -332,7 +336,9 @@ export default function Dashboard() {
 
         {memberTotals.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🍽</div>
+            <div style={{ marginBottom: '12px', opacity: 0.5 }}>
+              <Utensils size={48} />
+            </div>
             No meal entries this month yet
           </div>
         ) : (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, Save } from 'lucide-react';
 
 const MONTHS = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
@@ -62,7 +62,9 @@ export default function ManagerChange() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>🔄 Manager Change</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <RefreshCw size={28} color="var(--accent)" /> Manager Change
+        </h1>
         <p>Assign monthly managers for the mess</p>
       </div>
 
@@ -100,7 +102,7 @@ export default function ManagerChange() {
             </div>
 
             <button id="mgr-save-btn" type="submit" className="btn btn-primary btn-full" disabled={loading}>
-              {loading ? 'Saving...' : '💾 Save Manager'}
+              {loading ? 'Saving...' : <><Save size={18} /> Save Manager</>}
             </button>
           </form>
         </div>

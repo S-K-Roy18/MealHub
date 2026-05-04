@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, BarChart3, CreditCard } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MEAL_BADGE = { lunch: 'badge-warning', dinner: 'badge-info', other: 'badge-accent' };
@@ -43,7 +43,9 @@ export default function ExpenseHistory() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>📊 Expense History</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <BarChart3 size={28} color="var(--accent)" /> Expense History
+        </h1>
         <p>All recorded expenses</p>
       </div>
 
@@ -119,7 +121,9 @@ export default function ExpenseHistory() {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               border: '1px solid rgba(239,68,68,0.2)',
             }}>
-              <span style={{ fontWeight: 600, color: 'var(--danger)' }}>💸 Total Spent</span>
+              <span style={{ fontWeight: 600, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CreditCard size={18} /> Total Spent
+              </span>
               <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--danger)' }}>₹{displayTotal.toLocaleString()}</span>
             </div>
           </>

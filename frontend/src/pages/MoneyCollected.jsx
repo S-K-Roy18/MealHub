@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { FileText, Coins } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -35,7 +36,9 @@ export default function MoneyCollected() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>📄 Money Collected</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <FileText size={28} color="var(--accent)" /> Money Collected
+        </h1>
         <p>All payment history — {MONTHS[month-1]} {year}</p>
       </div>
 
@@ -75,7 +78,9 @@ export default function MoneyCollected() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           border: '1px solid rgba(34, 197, 94, 0.2)',
         }}>
-          <span style={{ fontWeight: 600, color: 'var(--success)' }}>💰 Total Money Collected</span>
+          <span style={{ fontWeight: 600, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Coins size={18} /> Total Money Collected
+          </span>
           <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--success)' }}>₹{total.toLocaleString()}</span>
         </div>
       </div>

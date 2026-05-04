@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Utensils, Save } from 'lucide-react';
 
 export default function MealEntry() {
   const [members, setMembers] = useState([]);
@@ -91,7 +91,9 @@ export default function MealEntry() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>🍽 Meal Entry</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Utensils size={28} color="var(--accent)" /> Meal Entry
+        </h1>
         <p>Record daily lunch and dinner for each member</p>
       </div>
 
@@ -177,7 +179,7 @@ export default function MealEntry() {
       </div>
 
       <button id="meal-submit-btn" className="btn btn-primary btn-lg" onClick={handleSubmit} disabled={loading}>
-        {loading ? 'Saving...' : '💾 Save Meal Entry'}
+        {loading ? 'Saving...' : <><Save size={18} /> Save Meal Entry</>}
       </button>
     </div>
   );

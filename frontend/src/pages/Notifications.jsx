@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { Bell, RefreshCw, Flame, Trash2, AlertCircle, CheckCircle, Info, XCircle, UserMinus } from 'lucide-react';
 
-const TYPE_ICONS = {
-  expense_added: '🟢',
-  expense_backdated: '🔴',
-  expense_edited: '🔴',
-  meal_added: '🟢',
-  money_added: '🟢',
-  gas_added: '🔥',
-  gas_paid: '✅',
-  gas_deleted: '🗑️',
-  manager_changed: '🔄',
-  member_removed: '🚫',
+const TYPE_CONFIG = {
+  expense_added: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
+  expense_backdated: { icon: <AlertCircle size={12} />, color: 'var(--danger)' },
+  expense_edited: { icon: <AlertCircle size={12} />, color: 'var(--danger)' },
+  meal_added: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
+  money_added: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
+  gas_added: { icon: <Flame size={12} />, color: '#ff6b9d' },
+  gas_paid: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
+  gas_deleted: { icon: <Trash2 size={12} />, color: 'var(--danger)' },
+  manager_changed: { icon: <RefreshCw size={12} />, color: 'var(--accent)' },
+  member_removed: { icon: <UserMinus size={12} />, color: 'var(--danger)' },
 };
 
 const TYPE_LABELS = {
@@ -44,7 +45,9 @@ export default function Notifications() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>🔔 Notifications</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Bell size={28} color="var(--accent)" /> Notifications
+        </h1>
         <p>Activity log for your mess</p>
       </div>
 
@@ -76,8 +79,8 @@ export default function Notifications() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span className={`badge ${green ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.7rem' }}>
-                          {TYPE_ICONS[n.type]} {TYPE_LABELS[n.type] || n.type}
+                        <span className={`badge ${green ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {TYPE_CONFIG[n.type]?.icon} {TYPE_LABELS[n.type] || n.type}
                         </span>
                       </div>
                       <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>

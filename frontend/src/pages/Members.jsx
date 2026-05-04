@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, X, AlertCircle, CheckCircle, Edit2, Trash2, Save, RotateCcw } from 'lucide-react';
+import { UserPlus, X, AlertCircle, CheckCircle, Edit2, Trash2, Save, RotateCcw, Users, ChefHat, User, Shield } from 'lucide-react';
 
 export default function Members() {
   const { user, isManager } = useAuth();
@@ -96,10 +96,10 @@ export default function Members() {
   const getRole = (member) => {
     const roles = [];
     const id = member._id?.toString();
-    if (member.isAdmin) roles.push({ label: '👑 Admin', cls: 'badge-warning' });
-    if (currentManagerId && id === currentManagerId) roles.push({ label: '🍽 Manager', cls: 'badge-accent' });
+    if (member.isAdmin) roles.push({ label: 'Admin', icon: <Shield size={12} />, cls: 'badge-warning' });
+    if (currentManagerId && id === currentManagerId) roles.push({ label: 'Manager', icon: <ChefHat size={12} />, cls: 'badge-accent' });
     if (!member.isAdmin && !(currentManagerId && id === currentManagerId)) {
-      roles.push({ label: '👤 Member', cls: 'badge-info' });
+      roles.push({ label: 'Member', icon: <User size={12} />, cls: 'badge-info' });
     }
     return roles;
   };
@@ -110,7 +110,9 @@ export default function Members() {
     <div className="fade-in">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1>👥 Members</h1>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Users size={28} color="var(--accent)" /> Members
+          </h1>
           <p>{members.length} member{members.length !== 1 ? 's' : ''} in this mess</p>
         </div>
         {user?.isAdmin && (
@@ -232,7 +234,9 @@ export default function Members() {
                     <td>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {roles.map((r, ri) => (
-                          <span key={ri} className={`badge ${r.cls}`}>{r.label}</span>
+                          <span key={ri} className={`badge ${r.cls}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {r.icon} {r.label}
+                          </span>
                         ))}
                       </div>
                     </td>

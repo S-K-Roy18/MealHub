@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Search } from 'lucide-react';
+import { Search, ClipboardList, BarChart3 } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -61,7 +61,9 @@ export default function MealTracking() {
   return (
     <div className="fade-in">
       <div className="page-header">
-        <h1>📋 Meal Tracking</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ClipboardList size={28} color="var(--accent)" /> Meal Tracking
+        </h1>
         <p>View all meal entries</p>
       </div>
 
@@ -141,7 +143,9 @@ export default function MealTracking() {
 
           {/* Member Totals */}
           <div className="card">
-            <h3 style={{ marginBottom: '16px' }}>📊 Member Meal Summary — {MONTHS[month-1]} {year}</h3>
+            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BarChart3 size={20} color="var(--accent)" /> Member Meal Summary — {MONTHS[month-1]} {year}
+            </h3>
             <div className="table-wrapper">
               <table>
                 <thead>
