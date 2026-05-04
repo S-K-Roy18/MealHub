@@ -180,18 +180,18 @@ export default function Members() {
                     <td>
                       {isEditing ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <input 
-                            className="form-input" 
-                            style={{ padding: '4px 8px', fontSize: '0.875rem' }} 
-                            value={editForm.username} 
-                            onChange={e => setEditForm(f => ({...f, username: e.target.value}))}
+                          <input
+                            className="form-input"
+                            style={{ padding: '4px 8px', fontSize: '0.875rem' }}
+                            value={editForm.username}
+                            onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))}
                             placeholder="Name"
                           />
-                          <input 
-                            className="form-input" 
-                            style={{ padding: '4px 8px', fontSize: '0.72rem' }} 
-                            value={editForm.gmail} 
-                            onChange={e => setEditForm(f => ({...f, gmail: e.target.value}))}
+                          <input
+                            className="form-input"
+                            style={{ padding: '4px 8px', fontSize: '0.72rem' }}
+                            value={editForm.gmail}
+                            onChange={e => setEditForm(f => ({ ...f, gmail: e.target.value }))}
                             placeholder="Gmail"
                           />
                         </div>
@@ -211,18 +211,20 @@ export default function Members() {
                               {m.username}
                               {isMe && <span className="badge badge-accent" style={{ fontSize: '0.65rem' }}>You</span>}
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.gmail}</div>
+                            {(user?.isAdmin || isMe) && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.gmail}</div>
+                            )}
                           </div>
                         </div>
                       )}
                     </td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                       {isEditing ? (
-                        <input 
-                          className="form-input" 
-                          style={{ padding: '4px 8px', fontSize: '0.875rem' }} 
-                          value={editForm.mobile} 
-                          onChange={e => setEditForm(f => ({...f, mobile: e.target.value}))}
+                        <input
+                          className="form-input"
+                          style={{ padding: '4px 8px', fontSize: '0.875rem' }}
+                          value={editForm.mobile}
+                          onChange={e => setEditForm(f => ({ ...f, mobile: e.target.value }))}
                           placeholder="Mobile"
                         />
                       ) : m.mobile}
@@ -239,16 +241,16 @@ export default function Members() {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           {isEditing ? (
                             <>
-                              <button 
-                                className="btn btn-primary btn-sm" 
+                              <button
+                                className="btn btn-primary btn-sm"
                                 style={{ padding: '4px 8px' }}
                                 onClick={() => handleUpdate(m._id)}
                                 disabled={updating}
                               >
                                 {updating ? '...' : <Save size={14} />}
                               </button>
-                              <button 
-                                className="btn btn-secondary btn-sm" 
+                              <button
+                                className="btn btn-secondary btn-sm"
                                 style={{ padding: '4px 8px' }}
                                 onClick={cancelEditing}
                               >
@@ -257,25 +259,25 @@ export default function Members() {
                             </>
                           ) : (
                             <>
-                              <button 
-                                className="btn btn-secondary btn-sm" 
+                              <button
+                                className="btn btn-secondary btn-sm"
                                 style={{ padding: '4px 8px' }}
                                 onClick={() => startEditing(m)}
                               >
                                 <Edit2 size={14} />
                               </button>
                               {!isMe && (
-                                  <button 
-                                    id={`remove-member-${m._id}`}
-                                    className="btn btn-sm" 
-                                    style={{ padding: '4px 8px', color: '#ff4444', border: '1px solid #ff444422', position: 'relative', zIndex: 10, cursor: 'pointer' }}
-                                    onClick={() => {
-                                      console.log('Member Remove button clicked for ID:', m._id);
-                                      handleRemove(m._id, m.username);
-                                    }}
-                                  >
-                                    <Trash2 size={14} style={{ pointerEvents: 'none' }} />
-                                  </button>
+                                <button
+                                  id={`remove-member-${m._id}`}
+                                  className="btn btn-sm"
+                                  style={{ padding: '4px 8px', color: '#ff4444', border: '1px solid #ff444422', position: 'relative', zIndex: 10, cursor: 'pointer' }}
+                                  onClick={() => {
+                                    console.log('Member Remove button clicked for ID:', m._id);
+                                    handleRemove(m._id, m.username);
+                                  }}
+                                >
+                                  <Trash2 size={14} style={{ pointerEvents: 'none' }} />
+                                </button>
                               )}
                             </>
                           )}
