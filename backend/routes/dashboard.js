@@ -23,7 +23,9 @@ router.get('/', auth, requireMess, async (req, res) => {
     ]);
 
     const totalCollected = moneyEntries.reduce((s, e) => s + e.amount, 0);
-    const totalSpent = expenses.reduce((s, e) => s + e.price, 0);
+    const paidGasTotal = gas.filter(g => g.isPaid).reduce((s, g) => s + g.price, 0);
+    const paidRiceTotal = rice.filter(r => r.isPaid).reduce((s, r) => s + r.price, 0);
+    const totalSpent = expenses.reduce((s, e) => s + e.price, 0) + paidGasTotal + paidRiceTotal;
 
     // Per-member meal totals
     const memberTotals = {};
