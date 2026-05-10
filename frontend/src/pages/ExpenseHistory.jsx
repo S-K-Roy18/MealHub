@@ -37,8 +37,9 @@ export default function ExpenseHistory() {
     (!search || e.itemName.toLowerCase().includes(search.toLowerCase())) &&
     (!dateFilter || new Date(e.date).toISOString().split('T')[0] === dateFilter)
   );
+  const displayTotal = filtered.reduce((s, e) => s + e.price, 0);
 
-    const grouped = [];
+  const grouped = [];
     const groups = {};
     filtered.forEach(e => {
       const dStr = new Date(e.date).toISOString().split('T')[0];
