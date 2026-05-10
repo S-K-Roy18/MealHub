@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Download, Plus, Flame, TrendingUp, X, Trash2, Utensils, Coins, Wallet, CreditCard, BarChart3, ChefHat, User } from 'lucide-react';
+import { Download, Plus, Flame, TrendingUp, X, Trash2, Utensils, Coins, Wallet, CreditCard, BarChart3, ChefHat, User, Package, Scale } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -16,17 +16,22 @@ export default function Dashboard() {
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
 
-  const [gasForm, setGasForm] = useState({ show: false, price: '', isPaid: true, buyingDate: new Date().toISOString().split('T')[0] });
+  const [gasCylinders, setGasCylinders] = useState([]);
+  const [gasForm, setGasForm] = useState({ show: false, price: '', isPaid: true, buyingDate: now.toISOString().split('T')[0] });
+
+  const [riceBags, setRiceBags] = useState([]);
+  const [riceForm, setRiceForm] = useState({ show: false, price: '', weight: '', buyingDate: now.toISOString().split('T')[0], isPaid: true });
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
-      const [moneyRes, expenseRes, mealRes, gasRes, messRes] = await Promise.all([
+      const [moneyRes, expenseRes, mealRes, gasRes, riceRes, messRes] = await Promise.all([
         api.get(`/money?month=${month}&year=${year}`),
         api.get(`/expense?month=${month}&year=${year}`),
         api.get(`/meal?month=${month}&year=${year}`),
         api.get(`/gas?month=${month}&year=${year}`),
+        api.get(`/rice?month=${month}&year=${year}`),
         api.get('/mess'),
       ]);
       setData({
@@ -34,7 +39,10 @@ export default function Dashboard() {
         expense: expenseRes.data,
         meal: mealRes.data,
         gas: gasRes.data,
+        rice: riceRes.data,
       });
+      setGasCylinders(gasRes.data.cylinders || []);
+      setRiceBags(riceRes.data.bags || []);
       setMessInfo(messRes.data);
     } catch (err) {
       console.error(err);
@@ -76,6 +84,38 @@ export default function Dashboard() {
     }
   };
 
+  const handleAddRice = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/rice', { 
+        buyingDate: riceForm.buyingDate, 
+        price: Number(riceForm.price), 
+        weight: riceForm.weight,
+        isPaid: riceForm.isPaid 
+      });
+      setRiceForm({ ...riceForm, show: false, price: '', weight: '' });
+      fetchData();
+    } catch {}
+  };
+
+  const markRicePaid = async (id) => {
+    try {
+      await api.put(`/rice/${id}/pay`);
+      fetchData();
+    } catch {}
+  };
+
+  const deleteRice = async (id) => {
+    if (!id) return;
+    if (!confirm('do you want to delete this rice entry?')) return;
+    try {
+      await api.delete(`/rice/${id.toString()}`);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete rice entry');
+    }
+  };
+
   const handlePDF = async () => {
     try {
       const { default: jsPDF } = await import('jspdf');
@@ -107,7 +147,6 @@ export default function Dashboard() {
   const balance = totalCollected - totalSpent;
   const totalMessMeals = data?.meal?.totalMessMeals || 0;
   const perMealCost = totalMessMeals > 0 ? (totalSpent / totalMessMeals) : 0;
-  const gasCylinders = data?.gas?.cylinders || [];
   const memberTotals = data?.meal?.memberTotals || [];
 
   // Current manager name
@@ -128,6 +167,7 @@ export default function Dashboard() {
     { icon: <Utensils size={24} />, label: 'Total Meals', value: totalMessMeals || 0, color: '#f59e0b' },
     { icon: <BarChart3 size={24} />, label: 'Per Meal Cost', value: `₹${(perMealCost || 0).toFixed(2)}`, color: '#7c6bff' },
     { icon: <Flame size={24} />, label: 'Gas Cylinders', value: gasCylinders.length || 0, color: '#ff6b9d' },
+    { icon: <Package size={24} />, label: 'Rice Bags', value: riceBags.length || 0, color: '#7c6bff' },
   ];
 
   return (
@@ -312,6 +352,126 @@ export default function Dashboard() {
                       }}
                     >
                       <Trash2 size={14} style={{ pointerEvents: 'none' }} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Rice Bags Section */}
+      <div className="card mb-24">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Package size={20} color="#7c6bff" />
+            <h3 style={{ margin: 0 }}>Rice Bags</h3>
+            <span className="badge badge-accent">{riceBags.length} this month</span>
+          </div>
+          {isManager && (
+            <button
+              id="add-rice-toggle-btn"
+              className="btn btn-primary btn-sm"
+              onClick={() => setRiceForm(f => ({ ...f, show: !f.show }))}
+            >
+              {riceForm.show ? <X size={14} /> : <Plus size={14} />} {riceForm.show ? 'Cancel' : 'Add Rice Bag'}
+            </button>
+          )}
+        </div>
+
+        {/* Add Rice Form */}
+        {riceForm.show && (
+          <div className="card mb-16 fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent)' }}>
+            <form onSubmit={handleAddRice} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', alignItems: 'flex-end' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Buying Date</label>
+                <input type="date" className="form-input" style={{ padding: '6px 10px' }} 
+                  value={riceForm.buyingDate} onChange={e => setRiceForm(f => ({ ...f, buyingDate: e.target.value }))} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Price (₹)</label>
+                <input type="number" className="form-input" style={{ padding: '6px 10px' }} placeholder="Price"
+                  value={riceForm.price} onChange={e => setRiceForm(f => ({ ...f, price: e.target.value }))} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Weight (e.g. 25kg)</label>
+                <input type="text" className="form-input" style={{ padding: '6px 10px' }} placeholder="Weight"
+                  value={riceForm.weight} onChange={e => setRiceForm(f => ({ ...f, weight: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Status</label>
+                <select className="form-input" style={{ padding: '6px 10px' }} 
+                  value={riceForm.isPaid ? 'paid' : 'due'} onChange={e => setRiceForm(f => ({ ...f, isPaid: e.target.value === 'paid' }))}>
+                  <option value="paid">Paid</option>
+                  <option value="due">Due</option>
+                </select>
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ height: '38px' }}>Save</button>
+            </form>
+          </div>
+        )}
+
+        {riceBags.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '20px 0' }}>
+            📦 No rice bags recorded this month
+            {isManager && <><br /><span style={{ fontSize: '0.8rem' }}>Click + Add Rice Bag above to record one</span></>}
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {riceBags.map((r, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '12px 16px',
+                background: 'var(--bg-secondary)',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px', height: '40px',
+                    background: r.isPaid ? 'var(--success-bg)' : 'var(--warning-bg)',
+                    borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: r.isPaid ? 'var(--success)' : 'var(--warning)',
+                  }}>
+                    <Package size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ₹{r.price} 
+                      {r.weight && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>({r.weight})</span>}
+                      <span className={`badge ${r.isPaid ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.65rem' }}>
+                        {r.isPaid ? 'Paid' : 'Due'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>📅 Bought: {formatDate(r.buyingDate) || 'N/A'}</span>
+                      {r.isPaid && r.paymentDate && (
+                        <span>💸 Paid: {formatDate(r.paymentDate) || 'N/A'}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {isManager && !r.isPaid && (
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                      onClick={() => markRicePaid(r._id)}
+                    >
+                      Mark Paid
+                    </button>
+                  )}
+                  {isManager && (
+                    <button 
+                      id={`delete-rice-${r._id}`}
+                      className="btn btn-sm" 
+                      style={{ padding: '4px 6px', color: '#ff4444', border: '1px solid #ff444422', position: 'relative', zIndex: 10, cursor: 'pointer' }}
+                      onClick={() => deleteRice(r._id)}
+                    >
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>

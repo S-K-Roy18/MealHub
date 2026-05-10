@@ -3,6 +3,7 @@ const MoneyEntry = require('../models/MoneyEntry');
 const Expense = require('../models/Expense');
 const MealEntry = require('../models/MealEntry');
 const GasCylinder = require('../models/GasCylinder');
+const RiceBag = require('../models/RiceBag');
 const { auth, requireMess } = require('../middleware/auth');
 
 // GET /api/dashboard?month=&year=
@@ -13,11 +14,12 @@ router.get('/', auth, requireMess, async (req, res) => {
     const year = parseInt(req.query.year) || now.getFullYear();
     const messId = req.user.messId;
 
-    const [moneyEntries, expenses, meals, gas] = await Promise.all([
+    const [moneyEntries, expenses, meals, gas, rice] = await Promise.all([
       MoneyEntry.find({ messId, month, year }).populate('memberId', 'username'),
       Expense.find({ messId, month, year }),
       MealEntry.find({ messId, month, year }).populate('entries.memberId', 'username'),
-      GasCylinder.find({ messId, month, year }).populate('addedBy', 'username').sort({ date: -1 }),
+      GasCylinder.find({ messId, month, year }).populate('addedBy', 'username').sort({ buyingDate: -1 }),
+      RiceBag.find({ messId, month, year }).populate('addedBy', 'username').sort({ buyingDate: -1 }),
     ]);
 
     const totalCollected = moneyEntries.reduce((s, e) => s + e.amount, 0);
@@ -56,6 +58,8 @@ router.get('/', auth, requireMess, async (req, res) => {
       perMealCost,
       gasCount: gas.length,
       gas,
+      riceCount: rice.length,
+      rice,
       memberTotals: Object.values(memberTotals),
       moneyByMember,
     });

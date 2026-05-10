@@ -19,6 +19,7 @@ app.use('/api/money', require('./routes/money'));
 app.use('/api/expense', require('./routes/expense'));
 app.use('/api/meal', require('./routes/meal'));
 app.use('/api/gas', require('./routes/gas'));
+app.use('/api/rice', require('./routes/rice'));
 app.use('/api/notifications', require('./routes/notification'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Bell, RefreshCw, Flame, Trash2, AlertCircle, CheckCircle, Info, XCircle, UserMinus } from 'lucide-react';
+import { Bell, RefreshCw, Flame, Trash2, AlertCircle, CheckCircle, Info, XCircle, UserMinus, Package } from 'lucide-react';
 
 const TYPE_CONFIG = {
   expense_added: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
@@ -11,6 +11,9 @@ const TYPE_CONFIG = {
   gas_added: { icon: <Flame size={12} />, color: '#ff6b9d' },
   gas_paid: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
   gas_deleted: { icon: <Trash2 size={12} />, color: 'var(--danger)' },
+  rice_added: { icon: <Package size={12} />, color: 'var(--accent)' },
+  rice_paid: { icon: <CheckCircle size={12} />, color: 'var(--success)' },
+  rice_deleted: { icon: <Trash2 size={12} />, color: 'var(--danger)' },
   manager_changed: { icon: <RefreshCw size={12} />, color: 'var(--accent)' },
   member_removed: { icon: <UserMinus size={12} />, color: 'var(--danger)' },
 };
@@ -24,6 +27,9 @@ const TYPE_LABELS = {
   gas_added: 'Gas Added',
   gas_paid: 'Gas Paid',
   gas_deleted: 'Gas Entry Deleted',
+  rice_added: 'Rice Bag Added',
+  rice_paid: 'Rice Bag Paid',
+  rice_deleted: 'Rice Bag Deleted',
   manager_changed: 'Manager Changed',
   member_removed: 'Member Removed',
 };
