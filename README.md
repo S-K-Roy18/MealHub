@@ -9,7 +9,6 @@
 
 **A premium, high-end mess management system designed for modern shared living.**
 
-[Explore Live](https://meal-hub-gcmc.vercel.app/) • [Report Bug](https://github.com/S-K-Roy18/MealHub/issues) • [Request Feature](https://github.com/S-K-Roy18/MealHub/issues)
 
 </div>
 
@@ -93,4 +92,4 @@ npm run dev
 
 ### Built with ❤️ by **SURYA**
 
-© 2026 MealHub Mess Management System.
+© 2026 MealHub- Mess Management System.
