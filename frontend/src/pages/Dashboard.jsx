@@ -26,23 +26,13 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const [moneyRes, expenseRes, mealRes, gasRes, riceRes, messRes] = await Promise.all([
-        api.get(`/money?month=${month}&year=${year}`),
-        api.get(`/expense?month=${month}&year=${year}`),
-        api.get(`/meal?month=${month}&year=${year}`),
-        api.get(`/gas?month=${month}&year=${year}`),
-        api.get(`/rice?month=${month}&year=${year}`),
+      const [dashRes, messRes] = await Promise.all([
+        api.get(`/dashboard?month=${month}&year=${year}`),
         api.get('/mess'),
       ]);
-      setData({
-        money: moneyRes.data,
-        expense: expenseRes.data,
-        meal: mealRes.data,
-        gas: gasRes.data,
-        rice: riceRes.data,
-      });
-      setGasCylinders(gasRes.data.cylinders || []);
-      setRiceBags(riceRes.data.bags || []);
+      setData(dashRes.data);
+      setGasCylinders(dashRes.data.gas || []);
+      setRiceBags(dashRes.data.rice || []);
       setMessInfo(messRes.data);
     } catch (err) {
       console.error(err);
@@ -142,23 +132,19 @@ export default function Dashboard() {
 
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
-  const totalCollected = data?.money?.totalCollected || 0;
-  const totalSpent = data?.expense?.totalSpent || 0;
-  const balance = totalCollected - totalSpent;
-  const totalMessMeals = data?.meal?.totalMessMeals || 0;
-  const perMealCost = totalMessMeals > 0 ? (totalSpent / totalMessMeals) : 0;
-  const memberTotals = data?.meal?.memberTotals || [];
+  const totalCollected = data?.totalCollected || 0;
+  const totalSpent = data?.totalSpent || 0;
+  const balance = data?.balance || 0;
+  const totalMessMeals = data?.totalMessMeals || 0;
+  const perMealCost = data?.perMealCost || 0;
+  const memberTotals = data?.memberTotals || [];
 
   // Current manager name
   const currentManagerId = messInfo?.currentManagerId?.toString();
   const currentManager = messInfo?.mess?.members?.find(m => m._id?.toString() === currentManagerId);
 
   // Build per-member money map
-  const moneyByMember = {};
-  (data?.money?.entries || []).forEach(e => {
-    const id = e.memberId?._id?.toString() || e.memberId?.toString();
-    if (id) moneyByMember[id] = (moneyByMember[id] || 0) + (e.amount || 0);
-  });
+  const moneyByMember = data?.moneyByMember || {};
 
   const statCards = [
     { icon: <Coins size={24} />, label: 'Total Collected', value: `₹${(totalCollected || 0).toLocaleString('en-IN')}`, color: '#22c55e' },
