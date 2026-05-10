@@ -56,4 +56,24 @@ router.get('/', auth, requireMess, async (req, res) => {
   }
 });
 
+// DELETE /api/money/:id — delete money entry (manager only)
+router.delete('/:id', auth, requireMess, isManager, async (req, res) => {
+  try {
+    const entry = await MoneyEntry.findOneAndDelete({ _id: req.params.id, messId: req.user.messId })
+      .populate('memberId', 'username');
+    if (!entry) return res.status(404).json({ message: 'Entry not found' });
+
+    await Notification.create({
+      messId: req.user.messId,
+      type: 'money_deleted',
+      message: `Money entry of ₹${entry.amount} for ${entry.memberId?.username || 'Unknown'} was deleted`,
+      addedBy: req.user._id,
+    });
+
+    res.json({ message: 'Entry deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

@@ -19,9 +19,10 @@ export default function Landing() {
         height: '72px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         zIndex: 100,
-        background: 'rgba(13, 15, 26, 0.7)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+        borderBottom: '1px solid var(--border)',
+        opacity: 0.95,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
@@ -122,8 +123,8 @@ export default function Landing() {
             <div style={{
               borderRadius: '24px',
               overflow: 'hidden',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 30px 60px -15px rgba(0,0,0,0.5)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow)',
             }}>
               <img src="/mealhub_hero_image.png" alt="MealHub Dashboard" style={{ width: '100%', height: 'auto', display: 'block' }} />
             </div>
@@ -134,7 +135,7 @@ export default function Landing() {
       {/* Stats Ribbon */}
       <section className="container-px" style={{
         padding: '40px 0',
-        background: 'rgba(255, 255, 255, 0.02)',
+        background: 'var(--bg-secondary)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
       }}>
@@ -148,7 +149,7 @@ export default function Landing() {
             ['4.9/5', 'User Rating'],
           ].map(([val, label]) => (
             <div key={label} style={{ textAlign: 'center', minWidth: '140px' }}>
-              <div style={{ fontSize: '1.75rem', fontWeight: 900, fontFamily: 'var(--font-display)', color: '#fff' }}>{val}</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 900, fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>{val}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
             </div>
           ))}

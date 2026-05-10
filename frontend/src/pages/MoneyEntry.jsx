@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { AlertCircle, CheckCircle, PlusCircle, Coins } from 'lucide-react';
+import { AlertCircle, CheckCircle, PlusCircle, Coins, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function MoneyEntry() {
+  const { isManager } = useAuth();
   const [members, setMembers] = useState([]);
   const [entries, setEntries] = useState([]);
   const [form, setForm] = useState({ memberId: '', amount: '', date: new Date().toISOString().split('T')[0], paymentMode: 'Cash' });
@@ -48,6 +50,18 @@ export default function MoneyEntry() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this entry?')) return;
+    try {
+      await api.delete(`/money/${id}`);
+      setSuccess('Entry deleted successfully');
+      fetchData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
   const total = entries.reduce((s, e) => s + e.amount, 0);
 
   return (
@@ -59,7 +73,12 @@ export default function MoneyEntry() {
         <p>Record money collected from members — {MONTHS[month-1]} {year}</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', 
+        gap: '24px', 
+        alignItems: 'start' 
+      }}>
         {/* Form */}
         <div className="card">
           <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -117,7 +136,7 @@ export default function MoneyEntry() {
           <div className="table-wrapper">
             <table>
               <thead>
-                <tr><th>Member</th><th>Amount</th><th>Mode</th><th>Date</th></tr>
+                <tr><th>Member</th><th>Amount</th><th>Mode</th><th>Date</th>{isManager && <th style={{ width: '40px' }}></th>}</tr>
               </thead>
               <tbody>
                 {entries.length === 0 ? (
@@ -130,6 +149,17 @@ export default function MoneyEntry() {
                     <td style={{ color: 'var(--text-secondary)' }}>
                       {new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                     </td>
+                    {isManager && (
+                      <td>
+                        <button 
+                          className="btn btn-sm" 
+                          style={{ padding: '4px', color: 'var(--danger)', border: '1px solid var(--danger-bg)' }}
+                          onClick={() => handleDelete(e._id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
