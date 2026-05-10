@@ -48,6 +48,49 @@ router.post('/', auth, requireMess, isManager, async (req, res) => {
   }
 });
 
+// POST /api/expense/batch — add multiple expenses
+router.post('/batch', auth, requireMess, isManager, async (req, res) => {
+  try {
+    const { expenses } = req.body;
+    if (!expenses || !Array.isArray(expenses)) return res.status(400).json({ message: 'Expenses array required' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalBatchPrice = 0;
+    let isAnyBackdated = false;
+
+    for (const exp of expenses) {
+      const entryDate = new Date(exp.date);
+      entryDate.setHours(0, 0, 0, 0);
+      const isBackdated = entryDate < today;
+      if (isBackdated) isAnyBackdated = true;
+
+      await Expense.create({
+        ...exp,
+        messId: req.user.messId,
+        month: entryDate.getMonth() + 1,
+        year: entryDate.getFullYear(),
+        addedBy: req.user._id,
+        isBackdated
+      });
+      totalBatchPrice += Number(exp.price);
+    }
+
+    await Notification.create({
+      messId: req.user.messId,
+      type: isAnyBackdated ? 'expense_backdated' : 'expense_added',
+      message: `Batch Added: ${expenses.length} items total ₹${totalBatchPrice.toFixed(2)}`,
+      isBackdated: isAnyBackdated,
+      addedBy: req.user._id,
+    });
+
+    res.status(201).json({ message: 'Batch expenses added successfully', count: expenses.length });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/expense?month=&year=&search=&date= — list expenses
 router.get('/', auth, requireMess, async (req, res) => {
   try {

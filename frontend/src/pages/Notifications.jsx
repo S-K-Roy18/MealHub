@@ -46,7 +46,10 @@ export default function Notifications() {
       .finally(() => setLoading(false));
   }, []);
 
-  const isGreen = (n) => !n.isBackdated && !n.isEdited;
+  const isGreen = (n) => {
+    const isDeletion = n.type.includes('deleted') || n.type.includes('removed');
+    return !n.isBackdated && !n.isEdited && !isDeletion;
+  };
 
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
