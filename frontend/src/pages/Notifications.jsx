@@ -48,7 +48,9 @@ export default function Notifications() {
 
   const isGreen = (n) => {
     const isDeletion = n.type.includes('deleted') || n.type.includes('removed');
-    return !n.isBackdated && !n.isEdited && !isDeletion;
+    const isEdit = n.isEdited || n.type.includes('edited');
+    const isBackdate = n.isBackdated || n.type.includes('backdated');
+    return !isBackdate && !isEdit && !isDeletion;
   };
 
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;

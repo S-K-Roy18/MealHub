@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [riceBags, setRiceBags] = useState([]);
   const [riceForm, setRiceForm] = useState({ show: false, price: '', weight: '', buyingDate: now.toISOString().split('T')[0], isPaid: true });
 
+  const [chefCostInput, setChefCostInput] = useState('0');
+
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
@@ -40,6 +42,16 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  // Sync chefCostInput when data is loaded
+  useEffect(() => {
+    if (messInfo?.mess?.monthlyManagers) {
+      const selectedMonthlyData = messInfo.mess.monthlyManagers.find(
+        m => m.month === month && m.year === year
+      );
+      setChefCostInput(selectedMonthlyData?.chefCost?.toString() || '0');
+    }
+  }, [messInfo]);
 
   const handleAddGas = async (e) => {
     e.preventDefault();
@@ -106,19 +118,250 @@ export default function Dashboard() {
     }
   };
 
+  const handleSaveChefCost = async () => {
+    const val = Number(chefCostInput) || 0;
+    try {
+      const res = await api.put('/mess/chef-cost', {
+        month,
+        year,
+        chefCost: val
+      });
+      if (res.data.mess) {
+        setMessInfo(prev => ({
+          ...prev,
+          mess: res.data.mess
+        }));
+      }
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update chef cost');
+    }
+  };
+
   const handlePDF = async () => {
     try {
       const { default: jsPDF } = await import('jspdf');
-      const { default: html2canvas } = await import('html2canvas');
-      const canvas = await html2canvas(dashRef.current, {
-        scale: 2,
-        backgroundColor: '#0d0f1a',
-        useCORS: true,
+      
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      const drawDivider = (yCoord) => {
+        pdf.setDrawColor(220, 222, 230);
+        pdf.setLineWidth(0.3);
+        pdf.line(15, yCoord, pageWidth - 15, yCoord);
+      };
+
+      let currentY = 20;
+
+      // 1. Header (Modern Shop Bill Style)
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.setTextColor(24, 28, 46);
+      pdf.text(messInfo?.mess?.name || 'MealHub Mess', 15, currentY);
+      
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(110, 115, 130);
+      const dateText = `${MONTHS[month - 1]} ${year}`;
+      pdf.text(`Billing Period: ${dateText}`, pageWidth - 15, currentY, { align: 'right' });
+      
+      currentY += 7;
+      pdf.setFontSize(9);
+      pdf.setTextColor(80, 85, 100);
+      const managerName = currentManager?.username || 'N/A';
+      pdf.text(`Manager: ${managerName}`, 15, currentY);
+      pdf.text(`Invoice Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - 15, currentY, { align: 'right' });
+
+      currentY += 5;
+      drawDivider(currentY);
+
+      // 2. Summary stats layout
+      currentY += 12;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.setTextColor(24, 28, 46);
+      pdf.text("MESS FINANCIAL OVERVIEW", 15, currentY);
+      
+      currentY += 8;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(100, 105, 120);
+      
+      // Column 1
+      pdf.text(`Total Collected:`, 15, currentY);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(34, 197, 94); // Green
+      pdf.text(`₹${(totalCollected || 0).toLocaleString('en-IN')}`, 55, currentY);
+      
+      // Column 2
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 105, 120);
+      pdf.text(`Total Bazaar Spent:`, 110, currentY);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(239, 68, 68); // Red
+      pdf.text(`₹${(totalSpent || 0).toLocaleString('en-IN')}`, 155, currentY);
+
+      currentY += 6;
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 105, 120);
+      pdf.text(`Total Meals Eaten:`, 15, currentY);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(24, 28, 46);
+      pdf.text(`${totalMessMeals}`, 55, currentY);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 105, 120);
+      pdf.text(`Per Meal Cost:`, 110, currentY);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(24, 28, 46);
+      pdf.text(`₹${(perMealCost || 0).toFixed(2)}`, 155, currentY);
+
+      currentY += 6;
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 105, 120);
+      pdf.text(`Chef Cost (Flat):`, 15, currentY);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(24, 28, 46);
+      pdf.text(`₹${(chefCost || 0).toFixed(2)}`, 55, currentY);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(100, 105, 120);
+      pdf.text(`Bazaar Balance:`, 110, currentY);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(balance >= 0 ? 34 : 239, balance >= 0 ? 197 : 68, balance >= 0 ? 94 : 68);
+      pdf.text(`₹${(balance || 0).toLocaleString('en-IN')}`, 155, currentY);
+
+      currentY += 8;
+      drawDivider(currentY);
+
+      // 3. Table Header
+      currentY += 12;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.setTextColor(24, 28, 46);
+      pdf.text("INDIVIDUAL COST BREAKDOWN", 15, currentY);
+
+      currentY += 8;
+      // Header row background box
+      pdf.setFillColor(242, 244, 248);
+      pdf.rect(15, currentY - 5, pageWidth - 30, 8, 'F');
+      
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(80, 85, 100);
+      pdf.text("Member Name", 18, currentY);
+      pdf.text("Meals", 62, currentY, { align: 'center' });
+      pdf.text("Meal Cost", 88, currentY, { align: 'right' });
+      pdf.text("Chef Cost", 115, currentY, { align: 'right' });
+      pdf.text("Given / Dep.", 145, currentY, { align: 'right' });
+      pdf.text("Due / Extra", 188, currentY, { align: 'right' });
+
+      // Border lines
+      pdf.setDrawColor(200, 202, 210);
+      pdf.setLineWidth(0.4);
+      pdf.line(15, currentY + 3, pageWidth - 15, currentY + 3);
+
+      currentY += 9;
+
+      // 4. Table Rows
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(40, 45, 60);
+
+      let calculatedTotalChefCost = 0;
+
+      memberTotals.forEach((m, idx) => {
+        if (currentY > pageHeight - 30) {
+          pdf.addPage();
+          currentY = 20;
+          
+          // Re-draw header on new page
+          pdf.setFillColor(242, 244, 248);
+          pdf.rect(15, currentY - 5, pageWidth - 30, 8, 'F');
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(80, 85, 100);
+          pdf.text("Member Name", 18, currentY);
+          pdf.text("Meals", 62, currentY, { align: 'center' });
+          pdf.text("Meal Cost", 88, currentY, { align: 'right' });
+          pdf.text("Chef Cost", 115, currentY, { align: 'right' });
+          pdf.text("Given / Dep.", 145, currentY, { align: 'right' });
+          pdf.text("Due / Extra", 188, currentY, { align: 'right' });
+          pdf.line(15, currentY + 3, pageWidth - 15, currentY + 3);
+          currentY += 9;
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(40, 45, 60);
+        }
+
+        const name = m.memberId?.username || 'Unknown';
+        const id = m.memberId?._id?.toString() || m.memberId?.toString();
+        const mealCost = m.total * perMealCost;
+        const totalMemberCost = mealCost + chefCost;
+        const given = moneyByMember[id] || 0;
+        const due = given - totalMemberCost;
+
+        calculatedTotalChefCost += chefCost;
+
+        if (idx % 2 === 1) {
+          pdf.setFillColor(248, 250, 252);
+          pdf.rect(15, currentY - 4.5, pageWidth - 30, 6.5, 'F');
+        }
+
+        pdf.text(name, 18, currentY);
+        pdf.text(`${m.total} (${m.lunch || 0}L+${m.dinner || 0}D)`, 62, currentY, { align: 'center' });
+        pdf.text(`₹${mealCost.toFixed(2)}`, 88, currentY, { align: 'right' });
+        pdf.text(`₹${chefCost.toFixed(2)}`, 115, currentY, { align: 'right' });
+        pdf.text(`₹${given.toLocaleString('en-IN')}`, 145, currentY, { align: 'right' });
+
+        if (due > 0) {
+          pdf.setTextColor(34, 197, 94);
+          pdf.text(`+₹${due.toFixed(2)}`, 188, currentY, { align: 'right' });
+        } else if (due < 0) {
+          pdf.setTextColor(239, 68, 68);
+          pdf.text(`-₹${Math.abs(due).toFixed(2)}`, 188, currentY, { align: 'right' });
+        } else {
+          pdf.setTextColor(110, 115, 130);
+          pdf.text(`₹0.00`, 188, currentY, { align: 'right' });
+        }
+        pdf.setTextColor(40, 45, 60); // Reset color
+
+        currentY += 7;
       });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width / 2, canvas.height / 2] });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
-      pdf.save(`${mess?.name || 'MealHub'}-${MONTHS[month - 1]}-${year}.pdf`);
+
+      // 5. Total Row
+      drawDivider(currentY - 3.5);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Total", 18, currentY);
+      pdf.text(`${totalMessMeals} meals`, 62, currentY, { align: 'center' });
+      pdf.text(`₹${totalSpent.toLocaleString('en-IN')}`, 88, currentY, { align: 'right' });
+      pdf.text(`₹${calculatedTotalChefCost.toLocaleString('en-IN')}`, 115, currentY, { align: 'right' });
+      pdf.text(`₹${totalCollected.toLocaleString('en-IN')}`, 145, currentY, { align: 'right' });
+      
+      const overallDue = totalCollected - (totalSpent + calculatedTotalChefCost);
+      if (overallDue > 0) {
+        pdf.setTextColor(34, 197, 94);
+        pdf.text(`+₹${overallDue.toFixed(2)}`, 188, currentY, { align: 'right' });
+      } else if (overallDue < 0) {
+        pdf.setTextColor(239, 68, 68);
+        pdf.text(`-₹${Math.abs(overallDue).toFixed(2)}`, 188, currentY, { align: 'right' });
+      } else {
+        pdf.setTextColor(110, 115, 130);
+        pdf.text(`₹0.00`, 188, currentY, { align: 'right' });
+      }
+      pdf.setTextColor(40, 45, 60);
+
+      // 6. Modern Bill Footer
+      currentY += 25;
+      if (currentY > pageHeight - 20) {
+        pdf.addPage();
+        currentY = 25;
+      }
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(8);
+      pdf.setTextColor(150, 155, 170);
+      pdf.text("Thank you for using MealHub Mess Management System.", pageWidth / 2, currentY, { align: 'center' });
+      pdf.text("This receipt is dynamically generated and legally valid for mess accounts auditing.", pageWidth / 2, currentY + 4, { align: 'center' });
+
+      pdf.save(`${messInfo?.mess?.name || 'MealHub'}-${MONTHS[month - 1]}-${year}-bill.pdf`);
     } catch (err) {
       console.error('PDF error:', err);
     }
@@ -145,6 +388,14 @@ export default function Dashboard() {
 
   // Build per-member money map
   const moneyByMember = data?.moneyByMember || {};
+
+  const selectedMonthlyData = messInfo?.mess?.monthlyManagers?.find(
+    m => m.month === month && m.year === year
+  );
+  const chefCost = selectedMonthlyData?.chefCost || 0;
+  const selectedManagerId = selectedMonthlyData?.managerId?._id || selectedMonthlyData?.managerId;
+  const isSelectedMonthManager = user && selectedManagerId && user._id.toString() === selectedManagerId.toString();
+  const canEditChefCost = user && (user.isAdmin || isSelectedMonthManager || messInfo?.mess?.adminId?.toString() === user._id.toString());
 
   const statCards = [
     { icon: <Coins size={24} />, label: 'Total Collected', value: `₹${(totalCollected || 0).toLocaleString('en-IN')}`, color: '#22c55e' },
@@ -469,15 +720,38 @@ export default function Dashboard() {
 
       {/* Individual Meal Cost Table */}
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <User size={18} color="var(--accent)" /> Individual Meal Cost — {MONTHS[month - 1]} {year}
           </h3>
-          {perMealCost > 0 && (
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Per meal: <strong style={{ color: 'var(--accent)' }}>₹{perMealCost.toFixed(2)}</strong>
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            {perMealCost > 0 && (
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                Per meal: <strong style={{ color: 'var(--accent)' }}>₹{perMealCost.toFixed(2)}</strong>
+              </span>
+            )}
+            {canEditChefCost ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-secondary)', padding: '4px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Chef Cost (₹):</span>
+                <input 
+                  type="number" 
+                  className="form-input" 
+                  style={{ width: '80px', padding: '4px 8px', fontSize: '0.85rem', height: '28px', margin: 0 }}
+                  placeholder="0"
+                  value={chefCostInput}
+                  onChange={e => setChefCostInput(e.target.value)}
+                  onBlur={handleSaveChefCost}
+                  onKeyDown={e => e.key === 'Enter' && handleSaveChefCost()}
+                />
+              </div>
+            ) : (
+              chefCost > 0 && (
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  Chef Cost: <strong style={{ color: 'var(--accent)' }}>₹{chefCost}</strong>
+                </span>
+              )
+            )}
+          </div>
         </div>
 
         {memberTotals.length === 0 ? (
@@ -495,6 +769,7 @@ export default function Dashboard() {
                   <th>Name</th>
                   <th style={{ textAlign: 'center' }}>Meals</th>
                   <th style={{ textAlign: 'right' }}>Meal Cost</th>
+                  <th style={{ textAlign: 'right' }}>Chef Cost</th>
                   <th style={{ textAlign: 'right' }}>Given</th>
                   <th style={{ textAlign: 'right' }}>Due / Extra</th>
                 </tr>
@@ -504,8 +779,9 @@ export default function Dashboard() {
                   const name = m.memberId?.username || 'Unknown';
                   const id = m.memberId?._id?.toString() || m.memberId?.toString();
                   const mealCost = m.total * perMealCost;
+                  const totalMemberCost = mealCost + chefCost;
                   const given = moneyByMember[id] || 0;
-                  const due = given - mealCost;
+                  const due = given - totalMemberCost;
                   return (
                     <tr key={i}>
                       <td>
@@ -529,6 +805,7 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{mealCost.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)' }}>₹{chefCost.toFixed(2)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>₹{given.toLocaleString('en-IN')}</td>
                       <td style={{ textAlign: 'right' }}>
                         <span
@@ -550,10 +827,11 @@ export default function Dashboard() {
                   <td style={{ fontWeight: 700 }}>Total</td>
                   <td style={{ textAlign: 'center', fontWeight: 700 }}>{totalMessMeals} meals</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>₹{totalSpent.toLocaleString('en-IN')}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700 }}>₹{(chefCost * memberTotals.length).toLocaleString('en-IN')}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>₹{totalCollected.toLocaleString('en-IN')}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>
-                    <span className={balance >= 0 ? 'amount-positive' : 'amount-negative'}>
-                      {balance >= 0 ? '+' : ''}₹{Math.abs(balance).toFixed(2)}
+                    <span className={(totalCollected - (totalSpent + chefCost * memberTotals.length)) >= 0 ? 'amount-positive' : 'amount-negative'}>
+                      {(totalCollected - (totalSpent + chefCost * memberTotals.length)) >= 0 ? '+' : ''}₹{Math.abs(totalCollected - (totalSpent + chefCost * memberTotals.length)).toFixed(2)}
                     </span>
                   </td>
                 </tr>

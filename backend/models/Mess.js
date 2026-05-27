@@ -4,6 +4,7 @@ const monthlyManagerSchema = new mongoose.Schema({
   month: { type: Number, required: true }, // 1-12
   year: { type: Number, required: true },
   managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  chefCost: { type: Number, default: 0 },
 }, { _id: false });
 
 const messSchema = new mongoose.Schema({

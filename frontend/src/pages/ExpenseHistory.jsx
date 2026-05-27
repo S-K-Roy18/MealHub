@@ -33,34 +33,45 @@ export default function ExpenseHistory() {
 
   const handleSearch = (e) => { e.preventDefault(); fetchData(); };
 
+  const getSafeDateString = (dateVal) => {
+    if (!dateVal) return new Date().toISOString().split('T')[0];
+    try {
+      const dObj = new Date(dateVal);
+      if (!isNaN(dObj.getTime())) {
+        return dObj.toISOString().split('T')[0];
+      }
+    } catch (err) {}
+    return new Date().toISOString().split('T')[0];
+  };
+
   const filtered = expenses.filter(e =>
     (!search || e.itemName.toLowerCase().includes(search.toLowerCase())) &&
-    (!dateFilter || new Date(e.date).toISOString().split('T')[0] === dateFilter)
+    (!dateFilter || getSafeDateString(e.date) === dateFilter)
   );
   const displayTotal = filtered.reduce((s, e) => s + e.price, 0);
 
   const grouped = [];
-    const groups = {};
-    filtered.forEach(e => {
-      const dStr = new Date(e.date).toISOString().split('T')[0];
-      const key = `${dStr}_${e.mealType}`;
-      if (!groups[key]) {
-        groups[key] = {
-          date: e.date,
-          mealType: e.mealType,
-          items: [],
-          totalPrice: 0,
-          addedBy: e.addedBy?.username,
-          isBackdated: e.isBackdated,
-          isEdited: e.isEdited,
-          notes: []
-        };
-        grouped.push(groups[key]);
-      }
-      groups[key].items.push({ name: e.itemName, price: e.price });
-      groups[key].totalPrice += e.price;
-      if (e.notes) groups[key].notes.push(e.notes);
-    });
+  const groups = {};
+  filtered.forEach(e => {
+    const dStr = getSafeDateString(e.date);
+    const key = `${dStr}_${e.mealType || 'other'}`;
+    if (!groups[key]) {
+      groups[key] = {
+        date: e.date,
+        mealType: e.mealType || 'other',
+        items: [],
+        totalPrice: 0,
+        addedBy: e.addedBy?.username || 'System',
+        isBackdated: e.isBackdated,
+        isEdited: e.isEdited,
+        notes: []
+      };
+      grouped.push(groups[key]);
+    }
+    groups[key].items.push({ name: e.itemName, price: e.price });
+    groups[key].totalPrice += e.price;
+    if (e.notes) groups[key].notes.push(e.notes);
+  });
 
     return (
       <div className="fade-in">
@@ -122,7 +133,11 @@ export default function ExpenseHistory() {
                     ) : grouped.map((g, i) => (
                       <tr key={i}>
                         <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                          {new Date(g.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                          {(() => {
+                            if (!g.date) return 'N/A';
+                            const dObj = new Date(g.date);
+                            return isNaN(dObj.getTime()) ? 'N/A' : dObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                          })()}
                           {g.isBackdated && <span className="badge badge-danger" style={{ marginLeft: '6px', fontSize: '0.65rem' }}>Backdated</span>}
                           {g.isEdited && <span className="badge badge-warning" style={{ marginLeft: '4px', fontSize: '0.65rem' }}>Edited</span>}
                         </td>

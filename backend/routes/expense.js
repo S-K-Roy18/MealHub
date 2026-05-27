@@ -1,8 +1,10 @@
 const router = require('express').Router();
 const Expense = require('../models/Expense');
 const GasCylinder = require('../models/GasCylinder');
+const RiceBag = require('../models/RiceBag');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isManager } = require('../middleware/auth');
+
 
 // POST /api/expense — add expense (manager only)
 router.post('/', auth, requireMess, isManager, async (req, res) => {
@@ -134,7 +136,24 @@ router.get('/', auth, requireMess, async (req, res) => {
       isGas: true
     }));
 
-    const combined = [...expenses, ...gasExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Include Paid Rice Bags
+    const riceBags = await RiceBag.find({ messId: req.user.messId, isPaid: true }).populate('addedBy', 'username');
+    
+    const riceExpenses = riceBags.filter(r => {
+      const d = new Date(r.buyingDate);
+      return (d.getMonth() + 1) === month && d.getFullYear() === year;
+    }).map(r => ({
+      _id: r._id,
+      date: r.buyingDate,
+      itemName: `Rice Bag 🌾${r.weight ? ` (${r.weight})` : ''}`,
+      price: r.price,
+      mealType: 'other',
+      notes: `Bought: ${new Date(r.buyingDate).toLocaleDateString('en-IN')}${r.paymentDate ? `, Paid: ${new Date(r.paymentDate).toLocaleDateString('en-IN')}` : ''}${r.remark ? ` [${r.remark}]` : ''}`,
+      addedBy: r.addedBy,
+      isRice: true
+    }));
+
+    const combined = [...expenses, ...gasExpenses, ...riceExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
     const totalSpent = combined.reduce((sum, e) => sum + e.price, 0);
 
     res.json({ expenses: combined, totalSpent });

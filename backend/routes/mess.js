@@ -186,6 +186,50 @@ router.delete('/remove-member/:id', auth, requireMess, isAdmin, async (req, res)
   }
 });
 
+// PUT /api/mess/chef-cost — update chef cost for a specific month and year
+router.put('/chef-cost', auth, requireMess, async (req, res) => {
+  try {
+    const { month, year, chefCost } = req.body;
+    if (!month || !year || chefCost === undefined) {
+      return res.status(400).json({ message: 'month, year, and chefCost are required' });
+    }
+
+    const existingIndex = req.mess.monthlyManagers.findIndex(m => m.month === Number(month) && m.year === Number(year));
+    
+    // Check permission: user must be admin OR the manager for that month and year
+    const isAdmin = req.user.isAdmin;
+    let isManagerForMonth = false;
+    if (existingIndex >= 0) {
+      const mgrId = req.mess.monthlyManagers[existingIndex].managerId;
+      isManagerForMonth = mgrId && mgrId.toString() === req.user._id.toString();
+    } else {
+      // If no monthly manager record exists, only admin can create it or default to manager access
+      isManagerForMonth = false;
+    }
+
+    if (!isAdmin && !isManagerForMonth && req.mess.adminId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only admin or the selected month manager can update chef cost' });
+    }
+
+    if (existingIndex >= 0) {
+      req.mess.monthlyManagers[existingIndex].chefCost = Number(chefCost);
+    } else {
+      req.mess.monthlyManagers.push({
+        month: Number(month),
+        year: Number(year),
+        managerId: req.mess.adminId || req.user._id,
+        chefCost: Number(chefCost)
+      });
+    }
+
+    await req.mess.save();
+
+    res.json({ mess: req.mess, message: 'Chef cost updated successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/mess/manager-history — get all monthly managers with per meal cost
 router.get('/manager-history', auth, requireMess, async (req, res) => {
   try {
