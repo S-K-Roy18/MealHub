@@ -160,11 +160,11 @@ export default function Dashboard() {
         pdf.setFontSize(8);
         pdf.setTextColor(255, 255, 255);
         pdf.text("Member Name", 18, yCoord);
-        pdf.text("Meals", 62, yCoord, { align: 'center' });
-        pdf.text("Meal Cost", 88, yCoord, { align: 'right' });
-        pdf.text("Chef Cost", 115, yCoord, { align: 'right' });
-        pdf.text("Given / Dep.", 145, yCoord, { align: 'right' });
-        pdf.text("Due / Extra", 188, yCoord, { align: 'right' });
+        pdf.text("Meals", 85, yCoord, { align: 'center' });
+        pdf.text("Meal Cost", 112, yCoord, { align: 'right' });
+        pdf.text("Chef Cost", 138, yCoord, { align: 'right' });
+        pdf.text("Given / Dep.", 165, yCoord, { align: 'right' });
+        pdf.text("Due / Extra", 192, yCoord, { align: 'right' });
       };
 
       let currentY = 15;
@@ -194,7 +194,7 @@ export default function Dashboard() {
 
       // 2. Manager and date detail strip
       currentY += 7;
-      pdf.setFont("helvetica", "medium");
+      pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8.5);
       pdf.setTextColor(71, 85, 105); // Gray slate (#475569)
       const managerName = currentManager?.username || 'N/A';
@@ -229,13 +229,13 @@ export default function Dashboard() {
       
       pdf.setFontSize(11.5);
       pdf.setTextColor(220, 38, 38); // Red
-      pdf.text(`₹${(totalSpent || 0).toLocaleString('en-IN')}`, 19, currentY + 11.5);
+      pdf.text(`Rs. ${(totalSpent || 0).toLocaleString('en-IN')}`, 19, currentY + 11.5);
       
       pdf.setTextColor(15, 23, 42); // Black slate
       pdf.text(`${totalMessMeals}`, 81, currentY + 11.5);
       
       pdf.setTextColor(79, 70, 229); // Indigo
-      pdf.text(`₹${(perMealCost || 0).toFixed(2)}`, 143, currentY + 11.5);
+      pdf.text(`Rs. ${(perMealCost || 0).toFixed(2)}`, 143, currentY + 11.5);
 
       currentY += boxHeight;
 
@@ -248,21 +248,21 @@ export default function Dashboard() {
       pdf.setFontSize(8);
       
       pdf.setTextColor(22, 101, 52); // Green-800
-      pdf.text(`Collected: ₹${(totalCollected || 0).toLocaleString('en-IN')}`, 18, currentY + 5.5);
+      pdf.text(`Collected: Rs. ${(totalCollected || 0).toLocaleString('en-IN')}`, 18, currentY + 5.5);
       
       pdf.setTextColor(71, 85, 105); // Slate-600
-      pdf.text(`Flat Chef Cost: ₹${(chefCost || 0).toFixed(2)}`, 78, currentY + 5.5);
+      pdf.text(`Flat Chef Cost: Rs. ${(chefCost || 0).toFixed(2)}`, 78, currentY + 5.5);
       
       const overallDue = totalCollected - (totalSpent + (chefCost * memberTotals.length));
       if (overallDue > 0) {
         pdf.setTextColor(22, 101, 52);
-        pdf.text(`Overall Mess Balance: +₹${overallDue.toFixed(2)}`, 138, currentY + 5.5);
+        pdf.text(`Overall Mess Balance: +Rs. ${overallDue.toFixed(2)}`, 138, currentY + 5.5);
       } else if (overallDue < 0) {
         pdf.setTextColor(185, 28, 28); // Red-700
-        pdf.text(`Overall Mess Balance: -₹${Math.abs(overallDue).toFixed(2)}`, 138, currentY + 5.5);
+        pdf.text(`Overall Mess Balance: -Rs. ${Math.abs(overallDue).toFixed(2)}`, 138, currentY + 5.5);
       } else {
         pdf.setTextColor(71, 85, 105);
-        pdf.text(`Overall Mess Balance: ₹0.00`, 138, currentY + 5.5);
+        pdf.text(`Overall Mess Balance: Rs. 0.00`, 138, currentY + 5.5);
       }
 
       currentY += 8;
@@ -276,11 +276,11 @@ export default function Dashboard() {
 
       currentY += 7;
       drawTableHeader(currentY);
-      currentY += 6.5;
+      currentY += 7.5;
 
       // 6. Table Rows
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8.5);
+      pdf.setFontSize(8);
       pdf.setTextColor(51, 65, 85); // Slate-700
 
       let calculatedTotalChefCost = 0;
@@ -290,9 +290,9 @@ export default function Dashboard() {
           pdf.addPage();
           currentY = 20;
           drawTableHeader(currentY);
-          currentY += 6.5;
+          currentY += 7.5;
           pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(8.5);
+          pdf.setFontSize(8);
           pdf.setTextColor(51, 65, 85);
         }
 
@@ -305,36 +305,36 @@ export default function Dashboard() {
 
         calculatedTotalChefCost += chefCost;
 
-        // Alternate row colors
+        // Alternate row colors background block
         if (idx % 2 === 1) {
           pdf.setFillColor(248, 250, 252);
-          pdf.rect(15, currentY - 4, pageWidth - 30, 6, 'F');
+          pdf.rect(15, currentY - 5, pageWidth - 30, 7.5, 'F');
         }
 
-        // Draw Row line
+        // Draw Row separator line
         pdf.setDrawColor(241, 245, 249);
         pdf.setLineWidth(0.15);
-        pdf.line(15, currentY + 2, pageWidth - 15, currentY + 2);
+        pdf.line(15, currentY + 2.5, pageWidth - 15, currentY + 2.5);
 
         pdf.text(name, 18, currentY);
-        pdf.text(`${m.total} (${m.lunch || 0}L+${m.dinner || 0}D)`, 62, currentY, { align: 'center' });
-        pdf.text(`₹${mealCost.toFixed(2)}`, 88, currentY, { align: 'right' });
-        pdf.text(`₹${chefCost.toFixed(2)}`, 115, currentY, { align: 'right' });
-        pdf.text(`₹${given.toLocaleString('en-IN')}`, 145, currentY, { align: 'right' });
+        pdf.text(`${m.total} (${m.lunch || 0}L+${m.dinner || 0}D)`, 85, currentY, { align: 'center' });
+        pdf.text(`Rs. ${mealCost.toFixed(2)}`, 112, currentY, { align: 'right' });
+        pdf.text(`Rs. ${chefCost.toFixed(2)}`, 138, currentY, { align: 'right' });
+        pdf.text(`Rs. ${given.toLocaleString('en-IN')}`, 165, currentY, { align: 'right' });
 
         if (due > 0) {
           pdf.setTextColor(22, 101, 52); // Darker Green
-          pdf.text(`+₹${due.toFixed(2)}`, 188, currentY, { align: 'right' });
+          pdf.text(`+Rs. ${due.toFixed(2)}`, 192, currentY, { align: 'right' });
         } else if (due < 0) {
           pdf.setTextColor(185, 28, 28); // Darker Red
-          pdf.text(`-₹${Math.abs(due).toFixed(2)}`, 188, currentY, { align: 'right' });
+          pdf.text(`-Rs. ${Math.abs(due).toFixed(2)}`, 192, currentY, { align: 'right' });
         } else {
           pdf.setTextColor(100, 116, 139);
-          pdf.text(`₹0.00`, 188, currentY, { align: 'right' });
+          pdf.text(`Rs. 0.00`, 192, currentY, { align: 'right' });
         }
         pdf.setTextColor(51, 65, 85); // Reset
 
-        currentY += 6;
+        currentY += 8.5; // row height spacing
       });
 
       // 7. Table Total Footer Row
@@ -344,32 +344,32 @@ export default function Dashboard() {
       }
       
       pdf.setFillColor(241, 245, 249);
-      pdf.rect(15, currentY - 4.5, pageWidth - 30, 7.5, 'F');
+      pdf.rect(15, currentY - 5, pageWidth - 30, 8, 'F');
       
       // Top & Bottom border for total row
       pdf.setDrawColor(203, 213, 225);
       pdf.setLineWidth(0.3);
-      pdf.line(15, currentY - 4.5, pageWidth - 15, currentY - 4.5);
+      pdf.line(15, currentY - 5, pageWidth - 15, currentY - 5);
       pdf.line(15, currentY + 3, pageWidth - 15, currentY + 3);
 
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(15, 23, 42);
       
       pdf.text("Total", 18, currentY);
-      pdf.text(`${totalMessMeals} meals`, 62, currentY, { align: 'center' });
-      pdf.text(`₹${totalSpent.toLocaleString('en-IN')}`, 88, currentY, { align: 'right' });
-      pdf.text(`₹${calculatedTotalChefCost.toLocaleString('en-IN')}`, 115, currentY, { align: 'right' });
-      pdf.text(`₹${totalCollected.toLocaleString('en-IN')}`, 145, currentY, { align: 'right' });
+      pdf.text(`${totalMessMeals} meals`, 85, currentY, { align: 'center' });
+      pdf.text(`Rs. ${totalSpent.toLocaleString('en-IN')}`, 112, currentY, { align: 'right' });
+      pdf.text(`Rs. ${calculatedTotalChefCost.toLocaleString('en-IN')}`, 138, currentY, { align: 'right' });
+      pdf.text(`Rs. ${totalCollected.toLocaleString('en-IN')}`, 165, currentY, { align: 'right' });
       
       if (overallDue > 0) {
         pdf.setTextColor(22, 101, 52);
-        pdf.text(`+₹${overallDue.toFixed(2)}`, 188, currentY, { align: 'right' });
+        pdf.text(`+Rs. ${overallDue.toFixed(2)}`, 192, currentY, { align: 'right' });
       } else if (overallDue < 0) {
         pdf.setTextColor(185, 28, 28);
-        pdf.text(`-₹${Math.abs(overallDue).toFixed(2)}`, 188, currentY, { align: 'right' });
+        pdf.text(`-Rs. ${Math.abs(overallDue).toFixed(2)}`, 192, currentY, { align: 'right' });
       } else {
         pdf.setTextColor(100, 116, 139);
-        pdf.text(`₹0.00`, 188, currentY, { align: 'right' });
+        pdf.text(`Rs. 0.00`, 192, currentY, { align: 'right' });
       }
 
       // 8. Invoice Footer
@@ -390,7 +390,7 @@ export default function Dashboard() {
       console.error('PDF error:', err);
     }
   };
-
+  
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
     const d = new Date(dateStr);
