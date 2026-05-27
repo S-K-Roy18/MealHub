@@ -196,19 +196,14 @@ router.put('/chef-cost', auth, requireMess, async (req, res) => {
 
     const existingIndex = req.mess.monthlyManagers.findIndex(m => m.month === Number(month) && m.year === Number(year));
     
-    // Check permission: user must be admin OR the manager for that month and year
-    const isAdmin = req.user.isAdmin;
     let isManagerForMonth = false;
     if (existingIndex >= 0) {
       const mgrId = req.mess.monthlyManagers[existingIndex].managerId;
       isManagerForMonth = mgrId && mgrId.toString() === req.user._id.toString();
-    } else {
-      // If no monthly manager record exists, only admin can create it or default to manager access
-      isManagerForMonth = false;
     }
 
-    if (!isAdmin && !isManagerForMonth && req.mess.adminId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Only admin or the selected month manager can update chef cost' });
+    if (!isManagerForMonth) {
+      return res.status(403).json({ message: 'Only the selected month manager can update chef cost' });
     }
 
     if (existingIndex >= 0) {
