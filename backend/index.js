@@ -19,6 +19,7 @@ app.use('/api/gas', require('./routes/gas'));
 app.use('/api/rice', require('./routes/rice'));
 app.use('/api/notifications', require('./routes/notification'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/period', require('./routes/period'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'MealHub API running 🍽' }));

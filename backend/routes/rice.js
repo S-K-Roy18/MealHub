@@ -2,6 +2,7 @@ const router = require('express').Router();
 const RiceBag = require('../models/RiceBag');
 const Notification = require('../models/Notification');
 const { auth, requireMess } = require('../middleware/auth');
+const { getPeriodDates } = require('../utils/period');
 
 // POST /api/rice — add rice bag
 router.post('/', auth, requireMess, async (req, res) => {
@@ -37,14 +38,12 @@ router.post('/', auth, requireMess, async (req, res) => {
   }
 });
 
-// GET /api/rice — list rice bags
+// GET /api/rice?periodId= — list rice bags
 router.get('/', auth, requireMess, async (req, res) => {
   try {
-    const now = new Date();
-    const month = parseInt(req.query.month) || now.getMonth() + 1;
-    const year = parseInt(req.query.year) || now.getFullYear();
+    const { startDate, endDate } = await getPeriodDates(req);
 
-    const bags = await RiceBag.find({ messId: req.user.messId, month, year })
+    const bags = await RiceBag.find({ messId: req.user.messId, buyingDate: { $gte: startDate, $lte: endDate } })
       .populate('addedBy', 'username')
       .sort({ buyingDate: -1 });
 

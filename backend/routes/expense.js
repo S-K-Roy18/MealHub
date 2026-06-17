@@ -4,6 +4,7 @@ const GasCylinder = require('../models/GasCylinder');
 const RiceBag = require('../models/RiceBag');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isManager } = require('../middleware/auth');
+const { getPeriodDates } = require('../utils/period');
 
 
 // POST /api/expense — add expense (manager only)
@@ -93,20 +94,26 @@ router.post('/batch', auth, requireMess, isManager, async (req, res) => {
   }
 });
 
-// GET /api/expense?month=&year=&search=&date= — list expenses
+// GET /api/expense?periodId=&date=&search= — list expenses
 router.get('/', auth, requireMess, async (req, res) => {
   try {
-    const now = new Date();
-    const month = parseInt(req.query.month) || now.getMonth() + 1;
-    const year = parseInt(req.query.year) || now.getFullYear();
-
-    let query = { messId: req.user.messId, month, year };
+    let startDate, endDate;
+    let query = { messId: req.user.messId };
+    
     if (req.query.date) {
       const d = new Date(req.query.date);
       const next = new Date(d);
       next.setDate(next.getDate() + 1);
       query.date = { $gte: d, $lt: next };
+      startDate = d;
+      endDate = next;
+    } else {
+      const periodDates = await getPeriodDates(req);
+      startDate = periodDates.startDate;
+      endDate = periodDates.endDate;
+      query.date = { $gte: startDate, $lte: endDate };
     }
+
     if (req.query.search) {
       query.itemName = { $regex: req.query.search, $options: 'i' };
     }
@@ -115,17 +122,15 @@ router.get('/', auth, requireMess, async (req, res) => {
 
     // Include Paid Gas Cylinders
     let gasQuery = { messId: req.user.messId, isPaid: true };
-    
-    // We filter gas by buyingDate's month/year or paymentDate's month/year? 
-    // Usually, expenses are recorded when they impact the budget.
-    // Let's check both or follow the dashboard logic (which uses buyingDate for the month view).
+    if (req.query.date) {
+      gasQuery.buyingDate = { $gte: startDate, $lt: endDate };
+    } else {
+      gasQuery.buyingDate = { $gte: startDate, $lte: endDate };
+    }
     
     const gasCylinders = await GasCylinder.find(gasQuery).populate('addedBy', 'username');
     
-    const gasExpenses = gasCylinders.filter(g => {
-      const d = new Date(g.buyingDate);
-      return (d.getMonth() + 1) === month && d.getFullYear() === year;
-    }).map(g => ({
+    const gasExpenses = gasCylinders.map(g => ({
       _id: g._id,
       date: g.buyingDate,
       itemName: 'Gas Cylinder 🔥',
@@ -137,12 +142,16 @@ router.get('/', auth, requireMess, async (req, res) => {
     }));
 
     // Include Paid Rice Bags
-    const riceBags = await RiceBag.find({ messId: req.user.messId, isPaid: true }).populate('addedBy', 'username');
+    let riceQuery = { messId: req.user.messId, isPaid: true };
+    if (req.query.date) {
+      riceQuery.buyingDate = { $gte: startDate, $lt: endDate };
+    } else {
+      riceQuery.buyingDate = { $gte: startDate, $lte: endDate };
+    }
     
-    const riceExpenses = riceBags.filter(r => {
-      const d = new Date(r.buyingDate);
-      return (d.getMonth() + 1) === month && d.getFullYear() === year;
-    }).map(r => ({
+    const riceBags = await RiceBag.find(riceQuery).populate('addedBy', 'username');
+    
+    const riceExpenses = riceBags.map(r => ({
       _id: r._id,
       date: r.buyingDate,
       itemName: `Rice Bag 🌾${r.weight ? ` (${r.weight})` : ''}`,

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const MealEntry = require('../models/MealEntry');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isManager } = require('../middleware/auth');
+const { getPeriodDates } = require('../utils/period');
 
 // POST /api/meal — submit/update meal entry for a date (manager only)
 router.post('/', auth, requireMess, isManager, async (req, res) => {
@@ -39,20 +40,19 @@ router.post('/', auth, requireMess, isManager, async (req, res) => {
   }
 });
 
-// GET /api/meal?month=&year=&date= — get meal entries
+// GET /api/meal?periodId=&date= — get meal entries
 router.get('/', auth, requireMess, async (req, res) => {
   try {
-    const now = new Date();
-    const month = parseInt(req.query.month) || now.getMonth() + 1;
-    const year = parseInt(req.query.year) || now.getFullYear();
-
-    let query = { messId: req.user.messId, month, year };
+    let query = { messId: req.user.messId };
     if (req.query.date) {
       const d = new Date(req.query.date);
       d.setHours(0, 0, 0, 0);
       const next = new Date(d);
       next.setDate(next.getDate() + 1);
       query.date = { $gte: d, $lt: next };
+    } else {
+      const { startDate, endDate } = await getPeriodDates(req);
+      query.date = { $gte: startDate, $lte: endDate };
     }
 
     const meals = await MealEntry.find(query)

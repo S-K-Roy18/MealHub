@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
-import { Download, Plus, Flame, TrendingUp, X, Trash2, Utensils, Coins, Wallet, CreditCard, BarChart3, ChefHat, User, Package, Scale } from 'lucide-react';
+import { Download, Plus, Flame, TrendingUp, X, Trash2, Utensils, Coins, Wallet, CreditCard, BarChart3, ChefHat, User, Package, Scale, Calendar } from 'lucide-react';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -24,19 +24,75 @@ export default function Dashboard() {
 
   const [chefCostInput, setChefCostInput] = useState('0');
 
-  useEffect(() => { fetchData(); }, [month, year]);
+  // Period management states
+  const [periods, setPeriods] = useState([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState('');
+  const [showPeriodForm, setShowPeriodForm] = useState(false);
+  const [editingPeriodId, setEditingPeriodId] = useState(null);
+  const [periodFormDates, setPeriodFormDates] = useState({ startDate: '', endDate: '', isActive: true });
+
+  useEffect(() => {
+    fetchPeriods();
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedPeriodId]);
+
+  const fetchPeriods = async () => {
+    try {
+      const res = await api.get('/period');
+      setPeriods(res.data.periods || []);
+    } catch (err) {
+      console.error('Failed to fetch periods', err);
+    }
+  };
+
+  const handleSavePeriod = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingPeriodId) {
+        await api.put(`/period/${editingPeriodId}`, periodFormDates);
+      } else {
+        await api.post('/period', periodFormDates);
+      }
+      setShowPeriodForm(false);
+      setEditingPeriodId(null);
+      await fetchPeriods();
+      await fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to save period');
+    }
+  };
+
+  const handleActivatePeriod = async (id) => {
+    try {
+      await api.put(`/period/${id}/activate`);
+      await fetchPeriods();
+      await fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to activate period');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
+      const url = selectedPeriodId ? `/dashboard?periodId=${selectedPeriodId}` : '/dashboard';
       const [dashRes, messRes] = await Promise.all([
-        api.get(`/dashboard?month=${month}&year=${year}`),
+        api.get(url),
         api.get('/mess'),
       ]);
       setData(dashRes.data);
       setGasCylinders(dashRes.data.gas || []);
       setRiceBags(dashRes.data.rice || []);
       setMessInfo(messRes.data);
+
+      if (dashRes.data.startDate) {
+        const activeStartDate = new Date(dashRes.data.startDate);
+        setMonth(activeStartDate.getMonth() + 1);
+        setYear(activeStartDate.getFullYear());
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -193,8 +249,10 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      const selectedMonthName = MONTHS[month - 1];
-      pdf.text(`Monthly Report – ${selectedMonthName} ${year}`, pageWidth - 20, currentY + 12, { align: 'right' });
+      const periodText = data?.period
+        ? `Period: ${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+        : `Monthly Report – ${MONTHS[month - 1]} ${year}`;
+      pdf.text(periodText, pageWidth - 20, currentY + 12, { align: 'right' });
       
       currentY += 26;
 
@@ -203,7 +261,7 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8.5);
       pdf.setTextColor(71, 85, 105); // Gray slate (#475569)
-      const managerName = currentManager?.username || 'N/A';
+      const managerName = data?.period?.managerId?.username || currentManager?.username || 'N/A';
       pdf.text(`Issued By (Manager): ${managerName}`, 15, currentY);
       pdf.text(`Report Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - 15, currentY, { align: 'right' });
 
@@ -404,7 +462,10 @@ export default function Dashboard() {
       pdf.text("Thank you for choosing MealHub Mess Management System.", pageWidth / 2, currentY, { align: 'center' });
       pdf.text("This receipt is dynamically generated and legally valid for mess accounts auditing.", pageWidth / 2, currentY + 4, { align: 'center' });
 
-      pdf.save(`${messInfo?.mess?.name || 'MealHub'}-${MONTHS[month - 1]}-${year}-bill.pdf`);
+      const pdfFilename = data?.period
+        ? `${messInfo?.mess?.name || 'MealHub'}-Period-${new Date(data.startDate).toISOString().split('T')[0]}-to-${new Date(data.endDate).toISOString().split('T')[0]}-bill.pdf`
+        : `${messInfo?.mess?.name || 'MealHub'}-${MONTHS[month - 1]}-${year}-bill.pdf`;
+      pdf.save(pdfFilename);
     } catch (err) {
       console.error('PDF error:', err);
     }
@@ -440,6 +501,9 @@ export default function Dashboard() {
   const isSelectedMonthManager = user && selectedManagerId && user._id.toString() === selectedManagerId.toString();
   const canEditChefCost = !!(user && isSelectedMonthManager);
 
+  const isMessAdmin = user && messInfo?.mess?.adminId?.toString() === user._id.toString();
+  const canManagePeriods = isManager || isMessAdmin;
+
   const statCards = [
     { icon: <Coins size={24} />, label: 'Total Collected', value: `₹${(totalCollected || 0).toLocaleString('en-IN')}`, color: '#22c55e' },
     { icon: <CreditCard size={24} />, label: 'Total Spent', value: `₹${(totalSpent || 0).toLocaleString('en-IN')}`, color: '#ef4444' },
@@ -463,8 +527,15 @@ export default function Dashboard() {
               🏠 {mess?.name}
             </span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>·</span>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-              {MONTHS[month - 1]} {year}
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {data?.period ? (
+                <>
+                  <span>📅 Period: {new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to {new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  {data.period.isActive && <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Active</span>}
+                </>
+              ) : (
+                <span>📅 Fallback: {MONTHS[month - 1]} {year}</span>
+              )}
             </span>
             {currentManager && (
               <>
@@ -479,23 +550,23 @@ export default function Dashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <select 
             className="form-input" 
-            style={{ width: '100px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-            value={month}
-            onChange={e => setMonth(Number(e.target.value))}
+            style={{ width: '220px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+            value={selectedPeriodId}
+            onChange={e => setSelectedPeriodId(e.target.value)}
           >
-            {MONTHS.map((m, idx) => (
-              <option key={idx} value={idx + 1}>{m}</option>
-            ))}
-          </select>
-          <select 
-            className="form-input" 
-            style={{ width: '90px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-            value={year}
-            onChange={e => setYear(Number(e.target.value))}
-          >
-            {Array.from({ length: 9 }, (_, i) => 2024 + i).map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
+            {periods.length === 0 ? (
+              <option value="">Default Month (No Periods)</option>
+            ) : (
+              <>
+                <option value="">Active Period (Default)</option>
+                {periods.map(p => (
+                  <option key={p._id} value={p._id}>
+                    {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {p.isActive ? ' (Active)' : ''}
+                  </option>
+                ))}
+              </>
+            )}
           </select>
           <button className="btn btn-secondary btn-sm" style={{ height: '32px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handlePDF} id="download-pdf-btn">
             <Download size={15} /> PDF
@@ -544,13 +615,164 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Period Management Card */}
+      {canManagePeriods && (
+        <div className="card mb-24">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Calendar size={20} color="var(--accent)" />
+              <h3 style={{ margin: 0 }}>Period Management</h3>
+              <span className="badge badge-accent">{periods.length} configured</span>
+            </div>
+            <button
+              id="add-period-toggle-btn"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                setShowPeriodForm(prev => !prev);
+                setEditingPeriodId(null);
+                setPeriodFormDates({ startDate: '', endDate: '', isActive: true });
+              }}
+            >
+              {showPeriodForm && !editingPeriodId ? <X size={14} /> : <Plus size={14} />} 
+              {showPeriodForm && !editingPeriodId ? 'Cancel' : 'New Period'}
+            </button>
+          </div>
+
+          {/* Create/Edit Period Form */}
+          {showPeriodForm && (
+            <div className="card mb-16 fade-in" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent)', padding: '16px' }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 700 }}>
+                {editingPeriodId ? 'Edit Period' : 'Create New Period'}
+              </h4>
+              <form onSubmit={handleSavePeriod} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', alignItems: 'flex-end' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>Start Date</label>
+                  <input 
+                    type="date" 
+                    className="form-input" 
+                    style={{ padding: '6px 10px' }} 
+                    value={periodFormDates.startDate} 
+                    onChange={e => setPeriodFormDates(f => ({ ...f, startDate: e.target.value }))} 
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>End Date</label>
+                  <input 
+                    type="date" 
+                    className="form-input" 
+                    style={{ padding: '6px 10px' }} 
+                    value={periodFormDates.endDate} 
+                    onChange={e => setPeriodFormDates(f => ({ ...f, endDate: e.target.value }))} 
+                    required 
+                  />
+                </div>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', height: '38px', gap: '8px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="period-active-checkbox" 
+                    checked={periodFormDates.isActive} 
+                    onChange={e => setPeriodFormDates(f => ({ ...f, isActive: e.target.checked }))} 
+                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                  />
+                  <label htmlFor="period-active-checkbox" style={{ fontSize: '0.85rem', cursor: 'pointer', userSelect: 'none', color: 'var(--text-secondary)' }}>
+                    Set as Active Period
+                  </label>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="submit" className="btn btn-primary" style={{ height: '38px', flex: 1 }}>Save</button>
+                  {editingPeriodId && (
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary" 
+                      style={{ height: '38px' }}
+                      onClick={() => {
+                        setShowPeriodForm(false);
+                        setEditingPeriodId(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Periods List */}
+          {periods.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '20px 0' }}>
+              📅 No custom billing periods configured yet.
+            </p>
+          ) : (
+            <div className="table-wrapper" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Date Range</th>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Created By</th>
+                    <th style={{ textAlign: 'center', padding: '8px' }}>Status</th>
+                    <th style={{ textAlign: 'right', padding: '8px' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {periods.map(p => (
+                    <tr key={p._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '8px', fontWeight: 600 }}>
+                        {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td style={{ padding: '8px', color: 'var(--text-secondary)' }}>
+                        {p.managerId?.username || 'Unknown'}
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <span className={`badge ${p.isActive ? 'badge-success' : 'badge-secondary'}`}>
+                          {p.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          {!p.isActive && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                              onClick={() => handleActivatePeriod(p._id)}
+                            >
+                              Activate
+                            </button>
+                          )}
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setShowPeriodForm(true);
+                              setEditingPeriodId(p._id);
+                              setPeriodFormDates({
+                                startDate: new Date(p.startDate).toISOString().split('T')[0],
+                                endDate: new Date(p.endDate).toISOString().split('T')[0],
+                                isActive: p.isActive,
+                              });
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Gas Section */}
       <div className="card mb-24">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Flame size={20} color="#ff6b9d" />
             <h3 style={{ margin: 0 }}>Gas Cylinders</h3>
-            <span className="badge badge-accent">{gasCylinders.length} this month</span>
+            <span className="badge badge-accent">{gasCylinders.length} this period</span>
           </div>
           {isManager && (
             <button
@@ -592,7 +814,7 @@ export default function Dashboard() {
 
         {gasCylinders.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '20px 0' }}>
-            🔥 No gas cylinders recorded this month
+            🔥 No gas cylinders recorded in this period
             {isManager && <><br /><span style={{ fontSize: '0.8rem' }}>Click + Add Cylinder above to record one</span></>}
           </p>
         ) : (
@@ -667,7 +889,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Package size={20} color="#7c6bff" />
             <h3 style={{ margin: 0 }}>Rice Bags</h3>
-            <span className="badge badge-accent">{riceBags.length} this month</span>
+            <span className="badge badge-accent">{riceBags.length} this period</span>
           </div>
           {isManager && (
             <button
@@ -714,7 +936,7 @@ export default function Dashboard() {
 
         {riceBags.length === 0 ? (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', textAlign: 'center', padding: '20px 0' }}>
-            📦 No rice bags recorded this month
+            📦 No rice bags recorded in this period
             {isManager && <><br /><span style={{ fontSize: '0.8rem' }}>Click + Add Rice Bag above to record one</span></>}
           </p>
         ) : (
@@ -785,7 +1007,14 @@ export default function Dashboard() {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <User size={18} color="var(--accent)" /> Individual Meal Cost — {MONTHS[month - 1]} {year}
+            <User size={18} color="var(--accent)" /> Individual Meal Cost
+            <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '8px' }}>
+              {data?.period ? (
+                `(${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })})`
+              ) : (
+                `(${MONTHS[month - 1]} ${year})`
+              )}
+            </span>
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             {perMealCost > 0 && (
@@ -834,7 +1063,7 @@ export default function Dashboard() {
             <div style={{ marginBottom: '12px', opacity: 0.5 }}>
               <Utensils size={48} />
             </div>
-            No meal entries this month yet
+            No meal entries in this period yet
           </div>
         ) : (
           <div className="table-wrapper">

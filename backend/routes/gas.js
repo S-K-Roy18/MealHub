@@ -2,6 +2,7 @@ const router = require('express').Router();
 const GasCylinder = require('../models/GasCylinder');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isManager, isAdmin } = require('../middleware/auth');
+const { getPeriodDates } = require('../utils/period');
 
 // POST /api/gas — add gas cylinder (manager or admin)
 router.post('/', auth, requireMess, async (req, res) => {
@@ -39,14 +40,12 @@ router.post('/', auth, requireMess, async (req, res) => {
   }
 });
 
-// GET /api/gas?month=&year= — list gas cylinders
+// GET /api/gas?periodId= — list gas cylinders
 router.get('/', auth, requireMess, async (req, res) => {
   try {
-    const now = new Date();
-    const month = parseInt(req.query.month) || now.getMonth() + 1;
-    const year = parseInt(req.query.year) || now.getFullYear();
+    const { startDate, endDate } = await getPeriodDates(req);
 
-    const cylinders = await GasCylinder.find({ messId: req.user.messId, month, year })
+    const cylinders = await GasCylinder.find({ messId: req.user.messId, buyingDate: { $gte: startDate, $lte: endDate } })
       .populate('addedBy', 'username')
       .sort({ buyingDate: -1 });
 

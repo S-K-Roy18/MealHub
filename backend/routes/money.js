@@ -2,6 +2,7 @@ const router = require('express').Router();
 const MoneyEntry = require('../models/MoneyEntry');
 const Notification = require('../models/Notification');
 const { auth, requireMess, isManager } = require('../middleware/auth');
+const { getPeriodDates } = require('../utils/period');
 
 // POST /api/money — add money entry (manager only)
 router.post('/', auth, requireMess, isManager, async (req, res) => {
@@ -38,14 +39,12 @@ router.post('/', auth, requireMess, isManager, async (req, res) => {
   }
 });
 
-// GET /api/money?month=&year= — get money entries
+// GET /api/money?periodId= — get money entries
 router.get('/', auth, requireMess, async (req, res) => {
   try {
-    const now = new Date();
-    const month = parseInt(req.query.month) || now.getMonth() + 1;
-    const year = parseInt(req.query.year) || now.getFullYear();
+    const { startDate, endDate } = await getPeriodDates(req);
 
-    const entries = await MoneyEntry.find({ messId: req.user.messId, month, year })
+    const entries = await MoneyEntry.find({ messId: req.user.messId, date: { $gte: startDate, $lte: endDate } })
       .populate('memberId', 'username mobile')
       .sort({ date: 1 });
 

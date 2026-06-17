@@ -6,20 +6,20 @@ const GasCylinder = require('../models/GasCylinder');
 const RiceBag = require('../models/RiceBag');
 const { auth, requireMess } = require('../middleware/auth');
 
-// GET /api/dashboard?month=&year=
+const { getPeriodDates } = require('../utils/period');
+
+// GET /api/dashboard?periodId=
 router.get('/', auth, requireMess, async (req, res) => {
   try {
-    const now = new Date();
-    const month = parseInt(req.query.month) || now.getMonth() + 1;
-    const year = parseInt(req.query.year) || now.getFullYear();
     const messId = req.user.messId;
+    const { startDate, endDate, selectedPeriod } = await getPeriodDates(req);
 
     const [moneyEntries, expenses, meals, gas, rice] = await Promise.all([
-      MoneyEntry.find({ messId, month, year }).populate('memberId', 'username'),
-      Expense.find({ messId, month, year }),
-      MealEntry.find({ messId, month, year }).populate('entries.memberId', 'username'),
-      GasCylinder.find({ messId, month, year }).populate('addedBy', 'username').sort({ buyingDate: -1 }),
-      RiceBag.find({ messId, month, year }).populate('addedBy', 'username').sort({ buyingDate: -1 }),
+      MoneyEntry.find({ messId, date: { $gte: startDate, $lte: endDate } }).populate('memberId', 'username'),
+      Expense.find({ messId, date: { $gte: startDate, $lte: endDate } }),
+      MealEntry.find({ messId, date: { $gte: startDate, $lte: endDate } }).populate('entries.memberId', 'username'),
+      GasCylinder.find({ messId, buyingDate: { $gte: startDate, $lte: endDate } }).populate('addedBy', 'username').sort({ buyingDate: -1 }),
+      RiceBag.find({ messId, buyingDate: { $gte: startDate, $lte: endDate } }).populate('addedBy', 'username').sort({ buyingDate: -1 }),
     ]);
 
     const totalCollected = moneyEntries.reduce((s, e) => s + e.amount, 0);
@@ -52,7 +52,9 @@ router.get('/', auth, requireMess, async (req, res) => {
     });
 
     res.json({
-      month, year,
+      period: selectedPeriod,
+      startDate,
+      endDate,
       totalCollected,
       totalSpent,
       balance: totalCollected - totalSpent,
