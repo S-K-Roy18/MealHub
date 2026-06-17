@@ -6,7 +6,7 @@ async function getPeriodDates(req) {
 
   if (req.query.periodId) {
     selectedPeriod = await Period.findOne({ _id: req.query.periodId, messId }).populate('managerId', 'username');
-  } else {
+  } else if (!req.query.month && !req.query.year) {
     selectedPeriod = await Period.findOne({ messId, isActive: true }).populate('managerId', 'username');
   }
 

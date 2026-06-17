@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [showPeriodForm, setShowPeriodForm] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState(null);
   const [periodFormDates, setPeriodFormDates] = useState({ startDate: '', endDate: '', isActive: true });
+  const [viewMode, setViewMode] = useState('monthly');
 
   useEffect(() => {
     fetchPeriods();
@@ -37,12 +38,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedPeriodId]);
+  }, [selectedPeriodId, month, year, viewMode]);
 
   const fetchPeriods = async () => {
     try {
       const res = await api.get('/period');
-      setPeriods(res.data.periods || []);
+      const loadedPeriods = res.data.periods || [];
+      setPeriods(loadedPeriods);
+      if (loadedPeriods.length > 0) {
+        setViewMode('period');
+      } else {
+        setViewMode('monthly');
+      }
     } catch (err) {
       console.error('Failed to fetch periods', err);
     }
@@ -78,7 +85,12 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const url = selectedPeriodId ? `/dashboard?periodId=${selectedPeriodId}` : '/dashboard';
+      let url = '/dashboard';
+      if (viewMode === 'period') {
+        url = selectedPeriodId ? `/dashboard?periodId=${selectedPeriodId}` : '/dashboard';
+      } else {
+        url = `/dashboard?month=${month}&year=${year}`;
+      }
       const [dashRes, messRes] = await Promise.all([
         api.get(url),
         api.get('/mess'),
@@ -88,7 +100,7 @@ export default function Dashboard() {
       setRiceBags(dashRes.data.rice || []);
       setMessInfo(messRes.data);
 
-      if (dashRes.data.startDate) {
+      if (viewMode === 'period' && dashRes.data.startDate) {
         const activeStartDate = new Date(dashRes.data.startDate);
         setMonth(activeStartDate.getMonth() + 1);
         setYear(activeStartDate.getFullYear());
@@ -249,7 +261,7 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      const periodText = data?.period
+      const periodText = (viewMode === 'period' && data?.period)
         ? `Period: ${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
         : `Monthly Report – ${MONTHS[month - 1]} ${year}`;
       pdf.text(periodText, pageWidth - 20, currentY + 12, { align: 'right' });
@@ -261,7 +273,7 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8.5);
       pdf.setTextColor(71, 85, 105); // Gray slate (#475569)
-      const managerName = data?.period?.managerId?.username || currentManager?.username || 'N/A';
+      const managerName = (viewMode === 'period' && data?.period?.managerId?.username) || currentManager?.username || 'N/A';
       pdf.text(`Issued By (Manager): ${managerName}`, 15, currentY);
       pdf.text(`Report Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - 15, currentY, { align: 'right' });
 
@@ -462,7 +474,7 @@ export default function Dashboard() {
       pdf.text("Thank you for choosing MealHub Mess Management System.", pageWidth / 2, currentY, { align: 'center' });
       pdf.text("This receipt is dynamically generated and legally valid for mess accounts auditing.", pageWidth / 2, currentY + 4, { align: 'center' });
 
-      const pdfFilename = data?.period
+      const pdfFilename = (viewMode === 'period' && data?.period)
         ? `${messInfo?.mess?.name || 'MealHub'}-Period-${new Date(data.startDate).toISOString().split('T')[0]}-to-${new Date(data.endDate).toISOString().split('T')[0]}-bill.pdf`
         : `${messInfo?.mess?.name || 'MealHub'}-${MONTHS[month - 1]}-${year}-bill.pdf`;
       pdf.save(pdfFilename);
@@ -528,13 +540,13 @@ export default function Dashboard() {
             </span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>·</span>
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {data?.period ? (
+              {viewMode === 'period' && data?.period ? (
                 <>
                   <span>📅 Period: {new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to {new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                   {data.period.isActive && <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Active</span>}
                 </>
               ) : (
-                <span>📅 Fallback: {MONTHS[month - 1]} {year}</span>
+                <span>📅 Month: {MONTHS[month - 1]} {year}</span>
               )}
             </span>
             {currentManager && (
@@ -548,26 +560,58 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <select 
-            className="form-input" 
-            style={{ width: '220px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-            value={selectedPeriodId}
-            onChange={e => setSelectedPeriodId(e.target.value)}
-          >
-            {periods.length === 0 ? (
-              <option value="">Default Month (No Periods)</option>
-            ) : (
-              <>
-                <option value="">Active Period (Default)</option>
-                {periods.map(p => (
-                  <option key={p._id} value={p._id}>
-                    {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    {p.isActive ? ' (Active)' : ''}
-                  </option>
+          {periods.length > 0 && (
+            <select
+              className="form-input"
+              style={{ width: '130px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+              value={viewMode}
+              onChange={e => setViewMode(e.target.value)}
+            >
+              <option value="period">Period View</option>
+              <option value="monthly">Monthly View</option>
+            </select>
+          )}
+
+          {viewMode === 'period' && periods.length > 0 ? (
+            <select 
+              className="form-input" 
+              style={{ width: '220px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+              value={selectedPeriodId}
+              onChange={e => setSelectedPeriodId(e.target.value)}
+            >
+              <option value="">Active Period (Default)</option>
+              {periods.map(p => (
+                <option key={p._id} value={p._id}>
+                  {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {p.isActive ? ' (Active)' : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <select 
+                className="form-input" 
+                style={{ width: '100px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+                value={month}
+                onChange={e => setMonth(Number(e.target.value))}
+              >
+                {MONTHS.map((m, idx) => (
+                  <option key={idx} value={idx + 1}>{m}</option>
                 ))}
-              </>
-            )}
-          </select>
+              </select>
+              <select 
+                className="form-input" 
+                style={{ width: '90px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+                value={year}
+                onChange={e => setYear(Number(e.target.value))}
+              >
+                {Array.from({ length: 9 }, (_, i) => 2024 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </>
+          )}
+          
           <button className="btn btn-secondary btn-sm" style={{ height: '32px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handlePDF} id="download-pdf-btn">
             <Download size={15} /> PDF
           </button>
@@ -1009,7 +1053,7 @@ export default function Dashboard() {
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <User size={18} color="var(--accent)" /> Individual Meal Cost
             <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '8px' }}>
-              {data?.period ? (
+              {viewMode === 'period' && data?.period ? (
                 `(${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })})`
               ) : (
                 `(${MONTHS[month - 1]} ${year})`
