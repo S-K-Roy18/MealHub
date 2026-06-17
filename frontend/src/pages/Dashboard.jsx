@@ -13,8 +13,8 @@ export default function Dashboard() {
   const dashRef = useRef();
 
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
 
   const [gasCylinders, setGasCylinders] = useState([]);
   const [gasForm, setGasForm] = useState({ show: false, price: '', isPaid: true, buyingDate: now.toISOString().split('T')[0] });
@@ -24,9 +24,10 @@ export default function Dashboard() {
 
   const [chefCostInput, setChefCostInput] = useState('0');
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [month, year]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [dashRes, messRes] = await Promise.all([
         api.get(`/dashboard?month=${month}&year=${year}`),
@@ -51,7 +52,7 @@ export default function Dashboard() {
       );
       setChefCostInput(selectedMonthlyData?.chefCost?.toString() || '0');
     }
-  }, [messInfo]);
+  }, [messInfo, month, year]);
 
   const handleAddGas = async (e) => {
     e.preventDefault();
@@ -176,19 +177,24 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(18);
       pdf.setTextColor(255, 255, 255);
-      pdf.text(messInfo?.mess?.name || 'MealHub Mess', 20, currentY + 10);
+      pdf.text("MealHub", 20, currentY + 9);
       
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont("helvetica", "italic");
       pdf.setFontSize(8.5);
       pdf.setTextColor(203, 213, 225); // Light slate (#cbd5e1)
-      pdf.text("MONTHLY MESS STATEMENT", 20, currentY + 16);
+      pdf.text("Eat Together, Manage Smarter", 20, currentY + 14);
+      
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(203, 213, 225);
+      pdf.text(`Mess: ${messInfo?.mess?.name || 'N/A'}`, 20, currentY + 20);
       
       // Billing period right aligned in banner
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(12);
+      pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      const dateText = `${MONTHS[month - 1]} ${year}`;
-      pdf.text(dateText.toUpperCase(), pageWidth - 20, currentY + 12, { align: 'right' });
+      const selectedMonthName = MONTHS[month - 1];
+      pdf.text(`Monthly Report – ${selectedMonthName} ${year}`, pageWidth - 20, currentY + 12, { align: 'right' });
       
       currentY += 26;
 
@@ -204,9 +210,9 @@ export default function Dashboard() {
       currentY += 4;
       drawDivider(currentY);
 
-      // 3. Grid Summary Stats Blocks (3 Columns)
+      // 3. Grid Summary Stats Blocks (4 Columns)
       currentY += 7;
-      const boxWidth = 56;
+      const boxWidth = 41;
       const boxHeight = 16;
       
       // Background and border for cards
@@ -214,58 +220,71 @@ export default function Dashboard() {
       pdf.setDrawColor(226, 232, 240);
       pdf.setLineWidth(0.25);
       
-      // Draw 3 boxes
+      // Draw 4 boxes
       pdf.rect(15, currentY, boxWidth, boxHeight, 'FD');
-      pdf.rect(77, currentY, boxWidth, boxHeight, 'FD');
-      pdf.rect(139, currentY, boxWidth, boxHeight, 'FD');
+      pdf.rect(61.3, currentY, boxWidth, boxHeight, 'FD');
+      pdf.rect(107.6, currentY, boxWidth, boxHeight, 'FD');
+      pdf.rect(153.9, currentY, boxWidth, boxHeight, 'FD');
       
       // Text inside boxes
-      pdf.setFontSize(7.5);
+      pdf.setFontSize(7);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(100, 116, 139); // Slate-500
-      pdf.text("TOTAL BAZAAR SPENT", 19, currentY + 5);
-      pdf.text("TOTAL MEALS", 81, currentY + 5);
-      pdf.text("PER MEAL COST", 143, currentY + 5);
+      pdf.text("TOTAL COLLECTED", 19, currentY + 5);
+      pdf.text("TOTAL SPENT", 65.3, currentY + 5);
+      pdf.text("AVAILABLE BALANCE", 111.6, currentY + 5);
+      pdf.text("PER MEAL COST", 157.9, currentY + 5);
       
-      pdf.setFontSize(11.5);
+      pdf.setFontSize(10.5);
+      pdf.setTextColor(22, 101, 52); // Green
+      pdf.text(`Rs. ${(totalCollected || 0).toLocaleString('en-IN')}`, 19, currentY + 11.5);
+      
       pdf.setTextColor(220, 38, 38); // Red
-      pdf.text(`Rs. ${(totalSpent || 0).toLocaleString('en-IN')}`, 19, currentY + 11.5);
+      pdf.text(`Rs. ${(totalSpent || 0).toLocaleString('en-IN')}`, 65.3, currentY + 11.5);
       
-      pdf.setTextColor(15, 23, 42); // Black slate
-      pdf.text(`${totalMessMeals}`, 81, currentY + 11.5);
+      if (balance >= 0) {
+        pdf.setTextColor(22, 101, 52);
+        pdf.text(`Rs. ${(balance || 0).toLocaleString('en-IN')}`, 111.6, currentY + 11.5);
+      } else {
+        pdf.setTextColor(220, 38, 38);
+        pdf.text(`Rs. ${(balance || 0).toLocaleString('en-IN')}`, 111.6, currentY + 11.5);
+      }
       
       pdf.setTextColor(79, 70, 229); // Indigo
-      pdf.text(`Rs. ${(perMealCost || 0).toFixed(2)}`, 143, currentY + 11.5);
+      pdf.text(`Rs. ${(perMealCost || 0).toFixed(2)}`, 157.9, currentY + 11.5);
 
       currentY += boxHeight;
 
-      // 4. Horizontal strip for Collected, Chef Cost, and Mess Balance
+      // 4. Horizontal strip for Logged Meals, Gas, and Rice
       currentY += 4;
       pdf.setFillColor(241, 245, 249); // Slate-100
       pdf.rect(15, currentY, pageWidth - 30, 8, 'F');
       
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(8);
-      
-      pdf.setTextColor(22, 101, 52); // Green-800
-      pdf.text(`Collected: Rs. ${(totalCollected || 0).toLocaleString('en-IN')}`, 18, currentY + 5.5);
-      
       pdf.setTextColor(71, 85, 105); // Slate-600
-      pdf.text(`Flat Chef Cost: Rs. ${(chefCost || 0).toFixed(2)}`, 78, currentY + 5.5);
       
-      const overallDue = totalCollected - (totalSpent + (chefCost * memberTotals.length));
-      if (overallDue > 0) {
-        pdf.setTextColor(22, 101, 52);
-        pdf.text(`Overall Mess Balance: +Rs. ${overallDue.toFixed(2)}`, 138, currentY + 5.5);
-      } else if (overallDue < 0) {
-        pdf.setTextColor(185, 28, 28); // Red-700
-        pdf.text(`Overall Mess Balance: -Rs. ${Math.abs(overallDue).toFixed(2)}`, 138, currentY + 5.5);
-      } else {
-        pdf.setTextColor(71, 85, 105);
-        pdf.text(`Overall Mess Balance: Rs. 0.00`, 138, currentY + 5.5);
-      }
+      pdf.text(`Total Meals Logged: ${totalMessMeals} meals`, 18, currentY + 5.5);
+      pdf.text(`Gas Cylinders: ${gasCylinders.length}`, 90, currentY + 5.5);
+      pdf.text(`Rice Bags: ${riceBags.length}`, 192, currentY + 5.5, { align: 'right' });
 
       currentY += 8;
+
+      // Chef Cost & Balance Info below cards
+      currentY += 4;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(71, 85, 105);
+      pdf.text(`Flat Chef Cost: Rs. ${(chefCost || 0).toFixed(2)}`, 15, currentY);
+      
+      const overallDue = totalCollected - (totalSpent + (chefCost * memberTotals.length));
+      if (overallDue >= 0) {
+        pdf.setTextColor(22, 101, 52);
+        pdf.text(`Overall Mess Balance: +Rs. ${overallDue.toFixed(2)}`, pageWidth - 15, currentY, { align: 'right' });
+      } else {
+        pdf.setTextColor(185, 28, 28);
+        pdf.text(`Overall Mess Balance: -Rs. ${Math.abs(overallDue).toFixed(2)}`, pageWidth - 15, currentY, { align: 'right' });
+      }
 
       // 5. Table Title
       currentY += 9;
@@ -457,8 +476,28 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-secondary btn-sm" onClick={handlePDF} id="download-pdf-btn">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <select 
+            className="form-input" 
+            style={{ width: '100px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+            value={month}
+            onChange={e => setMonth(Number(e.target.value))}
+          >
+            {MONTHS.map((m, idx) => (
+              <option key={idx} value={idx + 1}>{m}</option>
+            ))}
+          </select>
+          <select 
+            className="form-input" 
+            style={{ width: '90px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+            value={year}
+            onChange={e => setYear(Number(e.target.value))}
+          >
+            {Array.from({ length: 9 }, (_, i) => 2024 + i).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <button className="btn btn-secondary btn-sm" style={{ height: '32px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handlePDF} id="download-pdf-btn">
             <Download size={15} /> PDF
           </button>
         </div>
