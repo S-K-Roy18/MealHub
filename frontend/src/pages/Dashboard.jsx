@@ -26,11 +26,10 @@ export default function Dashboard() {
 
   // Period management states
   const [periods, setPeriods] = useState([]);
-  const [selectedPeriodId, setSelectedPeriodId] = useState('');
   const [showPeriodForm, setShowPeriodForm] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState(null);
   const [periodFormDates, setPeriodFormDates] = useState({ startDate: '', endDate: '', isActive: true });
-  const [viewMode, setViewMode] = useState('monthly');
+  const [filterValue, setFilterValue] = useState('active');
 
   useEffect(() => {
     fetchPeriods();
@@ -38,21 +37,32 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [selectedPeriodId, month, year, viewMode]);
+  }, [filterValue]);
 
   const fetchPeriods = async () => {
     try {
       const res = await api.get('/period');
-      const loadedPeriods = res.data.periods || [];
-      setPeriods(loadedPeriods);
-      if (loadedPeriods.length > 0) {
-        setViewMode('period');
-      } else {
-        setViewMode('monthly');
-      }
+      setPeriods(res.data.periods || []);
     } catch (err) {
       console.error('Failed to fetch periods', err);
     }
+  };
+
+  const generateAvailableMonths = () => {
+    const monthsList = [];
+    const startYear = 2024;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    for (let y = currentYear; y >= startYear; y--) {
+      for (let m = 11; m >= 0; m--) {
+        if (y === currentYear && m > now.getMonth()) continue;
+        monthsList.push({
+          value: `month:${m + 1}-${y}`,
+          label: `🗓 ${MONTHS[m]} ${y}`
+        });
+      }
+    }
+    return monthsList;
   };
 
   const handleSavePeriod = async (e) => {
@@ -86,10 +96,12 @@ export default function Dashboard() {
     setLoading(true);
     try {
       let url = '/dashboard';
-      if (viewMode === 'period') {
-        url = selectedPeriodId ? `/dashboard?periodId=${selectedPeriodId}` : '/dashboard';
-      } else {
-        url = `/dashboard?month=${month}&year=${year}`;
+      if (filterValue.startsWith('period:')) {
+        const pid = filterValue.split(':')[1];
+        url = `/dashboard?periodId=${pid}`;
+      } else if (filterValue.startsWith('month:')) {
+        const parts = filterValue.split(':')[1].split('-');
+        url = `/dashboard?month=${parts[0]}&year=${parts[1]}`;
       }
       const [dashRes, messRes] = await Promise.all([
         api.get(url),
@@ -100,7 +112,7 @@ export default function Dashboard() {
       setRiceBags(dashRes.data.rice || []);
       setMessInfo(messRes.data);
 
-      if (viewMode === 'period' && dashRes.data.startDate) {
+      if (dashRes.data.startDate) {
         const activeStartDate = new Date(dashRes.data.startDate);
         setMonth(activeStartDate.getMonth() + 1);
         setYear(activeStartDate.getFullYear());
@@ -261,7 +273,8 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      const periodText = (viewMode === 'period' && data?.period)
+      const isPeriodView = filterValue === 'active' || filterValue.startsWith('period:');
+      const periodText = (isPeriodView && data?.period)
         ? `Period: ${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
         : `Monthly Report – ${MONTHS[month - 1]} ${year}`;
       pdf.text(periodText, pageWidth - 20, currentY + 12, { align: 'right' });
@@ -273,7 +286,7 @@ export default function Dashboard() {
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(8.5);
       pdf.setTextColor(71, 85, 105); // Gray slate (#475569)
-      const managerName = (viewMode === 'period' && data?.period?.managerId?.username) || currentManager?.username || 'N/A';
+      const managerName = (isPeriodView && data?.period?.managerId?.username) || currentManager?.username || 'N/A';
       pdf.text(`Issued By (Manager): ${managerName}`, 15, currentY);
       pdf.text(`Report Date: ${new Date().toLocaleDateString('en-IN')}`, pageWidth - 15, currentY, { align: 'right' });
 
@@ -474,7 +487,7 @@ export default function Dashboard() {
       pdf.text("Thank you for choosing MealHub Mess Management System.", pageWidth / 2, currentY, { align: 'center' });
       pdf.text("This receipt is dynamically generated and legally valid for mess accounts auditing.", pageWidth / 2, currentY + 4, { align: 'center' });
 
-      const pdfFilename = (viewMode === 'period' && data?.period)
+      const pdfFilename = (isPeriodView && data?.period)
         ? `${messInfo?.mess?.name || 'MealHub'}-Period-${new Date(data.startDate).toISOString().split('T')[0]}-to-${new Date(data.endDate).toISOString().split('T')[0]}-bill.pdf`
         : `${messInfo?.mess?.name || 'MealHub'}-${MONTHS[month - 1]}-${year}-bill.pdf`;
       pdf.save(pdfFilename);
@@ -540,7 +553,7 @@ export default function Dashboard() {
             </span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>·</span>
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {viewMode === 'period' && data?.period ? (
+              {(filterValue === 'active' || filterValue.startsWith('period:')) && data?.period ? (
                 <>
                   <span>📅 Period: {new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to {new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                   {data.period.isActive && <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Active</span>}
@@ -560,57 +573,33 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {periods.length > 0 && (
-            <select
-              className="form-input"
-              style={{ width: '130px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-              value={viewMode}
-              onChange={e => setViewMode(e.target.value)}
-            >
-              <option value="period">Period View</option>
-              <option value="monthly">Monthly View</option>
-            </select>
-          )}
+          <select 
+            className="form-input" 
+            style={{ width: '260px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
+            value={filterValue}
+            onChange={e => setFilterValue(e.target.value)}
+          >
+            <option value="active">📅 Current Period</option>
+            
+            {periods.length > 0 && (
+              <optgroup label="Previous Periods">
+                {periods.map(p => (
+                  <option key={p._id} value={`period:${p._id}`}>
+                    {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {p.isActive ? ' (Active)' : ''}
+                  </option>
+                ))}
+              </optgroup>
+            )}
 
-          {viewMode === 'period' && periods.length > 0 ? (
-            <select 
-              className="form-input" 
-              style={{ width: '220px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-              value={selectedPeriodId}
-              onChange={e => setSelectedPeriodId(e.target.value)}
-            >
-              <option value="">Active Period (Default)</option>
-              {periods.map(p => (
-                <option key={p._id} value={p._id}>
-                  {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  {p.isActive ? ' (Active)' : ''}
+            <optgroup label="Monthly History">
+              {generateAvailableMonths().map(m => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
                 </option>
               ))}
-            </select>
-          ) : (
-            <>
-              <select 
-                className="form-input" 
-                style={{ width: '100px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-                value={month}
-                onChange={e => setMonth(Number(e.target.value))}
-              >
-                {MONTHS.map((m, idx) => (
-                  <option key={idx} value={idx + 1}>{m}</option>
-                ))}
-              </select>
-              <select 
-                className="form-input" 
-                style={{ width: '90px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-                value={year}
-                onChange={e => setYear(Number(e.target.value))}
-              >
-                {Array.from({ length: 9 }, (_, i) => 2024 + i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </>
-          )}
+            </optgroup>
+          </select>
           
           <button className="btn btn-secondary btn-sm" style={{ height: '32px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handlePDF} id="download-pdf-btn">
             <Download size={15} /> PDF
@@ -1053,7 +1042,7 @@ export default function Dashboard() {
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <User size={18} color="var(--accent)" /> Individual Meal Cost
             <span style={{ fontSize: '0.9rem', fontWeight: 'normal', color: 'var(--text-secondary)', marginLeft: '8px' }}>
-              {viewMode === 'period' && data?.period ? (
+              {(filterValue === 'active' || filterValue.startsWith('period:')) && data?.period ? (
                 `(${new Date(data.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(data.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })})`
               ) : (
                 `(${MONTHS[month - 1]} ${year})`
