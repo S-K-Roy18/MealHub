@@ -42,7 +42,7 @@ export default function Landing() {
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <Link to="/login" className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Login</Link>
           <Link to="/signup" className="btn btn-primary btn-sm" style={{ borderRadius: '10px' }}>
-            Get Started
+            Create Mess
           </Link>
         </div>
       </nav>
@@ -98,7 +98,7 @@ export default function Landing() {
 
             <div className="flex flex-wrap gap-16 mobile-center">
               <Link to="/signup" className="btn btn-primary btn-lg" style={{ borderRadius: '14px', padding: '14px 28px' }}>
-                Start for Free <ArrowRight size={18} />
+                Create Mess <ArrowRight size={18} />
               </Link>
               <Link to="/login" className="btn btn-secondary btn-lg" style={{ borderRadius: '14px', padding: '14px 28px', border: '1px solid var(--border)' }}>
                 Login to Mess
@@ -220,7 +220,7 @@ export default function Landing() {
             Join thousands of students and office mates who already use MealHub.
           </p>
           <Link to="/signup" className="btn btn-primary btn-lg" style={{ borderRadius: '14px', padding: '16px 40px', fontSize: '1.1rem' }}>
-            Get Started Now — It's Free
+            Create Mess
           </Link>
         </div>
       </section>
