@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Search, ClipboardList, BarChart3 } from 'lucide-react';
+import { usePeriod } from '../context/PeriodContext';
+import PeriodSelector from '../components/PeriodSelector';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function MealTracking() {
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
+  const { filterValue, getQueryParams } = usePeriod();
   const [dateFilter, setDateFilter] = useState('');
   const [meals, setMeals] = useState([]);
   const [memberTotals, setMemberTotals] = useState([]);
@@ -19,7 +19,7 @@ export default function MealTracking() {
     fetchMembers();
   }, []);
 
-  useEffect(() => { fetchData(); }, [month, year]);
+  useEffect(() => { fetchData(); }, [filterValue]);
 
   const fetchMembers = async () => {
     const res = await api.get('/mess');
@@ -29,8 +29,9 @@ export default function MealTracking() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ month, year });
-      if (dateFilter) params.append('date', dateFilter);
+      const queryParams = getQueryParams();
+      if (dateFilter) queryParams.date = dateFilter;
+      const params = new URLSearchParams(queryParams);
       const res = await api.get(`/meal?${params}`);
       setMeals(res.data.meals || []);
       setMemberTotals(res.data.memberTotals || []);
@@ -70,15 +71,9 @@ export default function MealTracking() {
       {/* Filters */}
       <div className="card mb-16">
         <form onSubmit={handleFilter} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ minWidth: '120px' }}>
-            <label className="form-label">Month</label>
-            <select className="form-input" value={month} onChange={e => setMonth(+e.target.value)}>
-              {MONTHS.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
-            </select>
-          </div>
-          <div className="form-group" style={{ width: '90px' }}>
-            <label className="form-label">Year</label>
-            <input type="number" className="form-input" value={year} onChange={e => setYear(+e.target.value)} min="2020" max="2099" />
+          <div className="form-group" style={{ flex: 1, minWidth: '260px' }}>
+            <label className="form-label">Period</label>
+            <PeriodSelector />
           </div>
           <div className="form-group" style={{ flex: 1, minWidth: '160px' }}>
             <label className="form-label">Filter by Date</label>

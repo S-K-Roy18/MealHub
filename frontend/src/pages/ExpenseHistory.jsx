@@ -1,28 +1,29 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Search, Calendar, BarChart3, CreditCard } from 'lucide-react';
+import { usePeriod } from '../context/PeriodContext';
+import PeriodSelector from '../components/PeriodSelector';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MEAL_BADGE = { lunch: 'badge-warning', dinner: 'badge-info', other: 'badge-accent' };
 
 export default function ExpenseHistory() {
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
+  const { filterValue, getQueryParams } = usePeriod();
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [expenses, setExpenses] = useState([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchData(); }, [month, year]);
+  useEffect(() => { fetchData(); }, [filterValue]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ month, year });
-      if (search) params.append('search', search);
-      if (dateFilter) params.append('date', dateFilter);
+      const queryParams = getQueryParams();
+      if (search) queryParams.search = search;
+      if (dateFilter) queryParams.date = dateFilter;
+      const params = new URLSearchParams(queryParams);
       const res = await api.get(`/expense?${params}`);
       setExpenses(res.data.expenses || []);
       setTotalSpent(res.data.totalSpent || 0);
@@ -85,15 +86,9 @@ export default function ExpenseHistory() {
         {/* Filters */}
         <div className="card mb-16">
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div className="form-group" style={{ flex: 1, minWidth: '140px' }}>
-              <label className="form-label">Month</label>
-              <select className="form-input" value={month} onChange={e => setMonth(+e.target.value)}>
-                {MONTHS.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
-              </select>
-            </div>
-            <div className="form-group" style={{ width: '100px' }}>
-              <label className="form-label">Year</label>
-              <input type="number" className="form-input" value={year} onChange={e => setYear(+e.target.value)} min="2020" max="2099" />
+            <div className="form-group" style={{ flex: 1, minWidth: '260px' }}>
+              <label className="form-label">Period</label>
+              <PeriodSelector />
             </div>
             <div className="form-group" style={{ flex: 2, minWidth: '180px' }}>
               <label className="form-label">Search Item</label>

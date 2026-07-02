@@ -1,26 +1,27 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { FileText, Coins } from 'lucide-react';
+import { usePeriod } from '../context/PeriodContext';
+import PeriodSelector from '../components/PeriodSelector';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function MoneyCollected() {
+  const { filterValue, getQueryParams } = usePeriod();
   const [entries, setEntries] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-
   useEffect(() => {
-    api.get(`/money?month=${month}&year=${year}`)
+    setLoading(true);
+    const params = new URLSearchParams(getQueryParams());
+    api.get(`/money?${params}`)
       .then(res => {
         setEntries(res.data.entries || []);
         setTotal(res.data.totalCollected || 0);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [filterValue]);
 
   // Group by member
   const grouped = {};
@@ -35,11 +36,16 @@ export default function MoneyCollected() {
 
   return (
     <div className="fade-in">
-      <div className="page-header">
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <FileText size={28} color="var(--accent)" /> Money Collected
-        </h1>
-        <p>All payment history — {MONTHS[month-1]} {year}</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FileText size={28} color="var(--accent)" /> Money Collected
+          </h1>
+          <p>All payment history for the selected period</p>
+        </div>
+        <div>
+          <PeriodSelector />
+        </div>
       </div>
 
       <div className="card">

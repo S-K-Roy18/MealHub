@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { Download, Plus, Flame, TrendingUp, X, Trash2, Utensils, Coins, Wallet, CreditCard, BarChart3, ChefHat, User, Package, Scale, Calendar } from 'lucide-react';
+import { usePeriod } from '../context/PeriodContext';
+import PeriodSelector from '../components/PeriodSelector';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -24,46 +26,17 @@ export default function Dashboard() {
 
   const [chefCostInput, setChefCostInput] = useState('0');
 
-  // Period management states
-  const [periods, setPeriods] = useState([]);
+  const { filterValue, setFilterValue, periods, fetchPeriods } = usePeriod();
+
   const [showPeriodForm, setShowPeriodForm] = useState(false);
   const [editingPeriodId, setEditingPeriodId] = useState(null);
   const [periodFormDates, setPeriodFormDates] = useState({ startDate: '', endDate: '', isActive: true });
-  const [filterValue, setFilterValue] = useState('active');
-
-  useEffect(() => {
-    fetchPeriods();
-  }, []);
 
   useEffect(() => {
     fetchData();
   }, [filterValue]);
 
-  const fetchPeriods = async () => {
-    try {
-      const res = await api.get('/period');
-      setPeriods(res.data.periods || []);
-    } catch (err) {
-      console.error('Failed to fetch periods', err);
-    }
-  };
-
-  const generateAvailableMonths = () => {
-    const monthsList = [];
-    const startYear = 2024;
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    for (let y = currentYear; y >= startYear; y--) {
-      for (let m = 11; m >= 0; m--) {
-        if (y === currentYear && m > now.getMonth()) continue;
-        monthsList.push({
-          value: `month:${m + 1}-${y}`,
-          label: `🗓 ${MONTHS[m]} ${y}`
-        });
-      }
-    }
-    return monthsList;
-  };
+  // removed generateAvailableMonths and fetchPeriods as they are in context/component
 
   const handleSavePeriod = async (e) => {
     e.preventDefault();
@@ -573,33 +546,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <select 
-            className="form-input" 
-            style={{ width: '260px', padding: '4px 8px', fontSize: '0.875rem', height: '32px', margin: 0, cursor: 'pointer' }}
-            value={filterValue}
-            onChange={e => setFilterValue(e.target.value)}
-          >
-            <option value="active">📅 Current Period</option>
-            
-            {periods.length > 0 && (
-              <optgroup label="Previous Periods">
-                {periods.map(p => (
-                  <option key={p._id} value={`period:${p._id}`}>
-                    {new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    {p.isActive ? ' (Active)' : ''}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-
-            <optgroup label="Monthly History">
-              {generateAvailableMonths().map(m => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          <PeriodSelector />
           
           <button className="btn btn-secondary btn-sm" style={{ height: '32px', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={handlePDF} id="download-pdf-btn">
             <Download size={15} /> PDF

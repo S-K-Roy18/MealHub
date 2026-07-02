@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { PeriodProvider } from './context/PeriodContext';
 import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 
@@ -28,8 +29,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
+        <PeriodProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
@@ -67,6 +69,7 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </PeriodProvider>
       </AuthProvider>
     </ThemeProvider>
   );
