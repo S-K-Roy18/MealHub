@@ -141,7 +141,7 @@ export default function MealTracking() {
           {/* Member Totals */}
           <div className="card">
             <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BarChart3 size={20} color="var(--accent)" /> Member Meal Summary — {MONTHS[month-1]} {year}
+              <BarChart3 size={20} color="var(--accent)" /> Member Meal Summary
             </h3>
             <div className="table-wrapper">
               <table>
