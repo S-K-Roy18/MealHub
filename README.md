@@ -1,8 +1,10 @@
-# 🍽️ MealHub – Eat Together, Manage Smarter
+
 
 <div align="center">
   <img src="frontend/public/favicon.png" alt="MealHub Logo" width="120" />
   <br/>
+
+  #  MealHub – Eat Together 🍽️ Manage Smarter
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://meal-hub-gcmc.vercel.app/)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
