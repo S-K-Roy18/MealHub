@@ -1117,7 +1117,7 @@ export default function Dashboard() {
               <tfoot>
                 <tr style={{ background: 'var(--bg-secondary)' }}>
                   <td style={{ fontWeight: 700 }}>Total</td>
-                  <td style={{ textAlign: 'center', fontWeight: 700 }}>{totalMessMeals} meals</td>
+                  <td style={{ textAlign: 'center', fontWeight: 700 }} colSpan={3}>{totalMessMeals} total meals</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>₹{totalSpent.toLocaleString('en-IN')}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>₹{(chefCost * memberTotals.length).toLocaleString('en-IN')}</td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>₹{totalCollected.toLocaleString('en-IN')}</td>
