@@ -4,6 +4,7 @@ const memberMealSchema = new mongoose.Schema({
   memberId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   lunch: { type: Boolean, default: false },
   dinner: { type: Boolean, default: false },
+  extra: { type: Number, default: 0 },
 }, { _id: false });
 
 const mealEntrySchema = new mongoose.Schema({

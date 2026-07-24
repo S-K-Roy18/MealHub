@@ -1051,7 +1051,9 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th style={{ textAlign: 'center' }}>Meals</th>
+                  <th style={{ textAlign: 'center' }}>Reg Meals</th>
+                  <th style={{ textAlign: 'center' }}>Extra</th>
+                  <th style={{ textAlign: 'center' }}>Total</th>
                   <th style={{ textAlign: 'right' }}>Meal Cost</th>
                   <th style={{ textAlign: 'right' }}>Chef Cost</th>
                   <th style={{ textAlign: 'right' }}>Given</th>
@@ -1083,10 +1085,16 @@ export default function Dashboard() {
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span style={{ fontWeight: 600 }}>{m.total}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '4px' }}>
-                          ({m.lunch || 0}L + {m.dinner || 0}D)
+                        <span style={{ fontWeight: 600 }}>{(m.lunch || 0) + (m.dinner || 0)}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                          ({m.lunch || 0}L, {m.dinner || 0}D)
                         </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--success)' }}>{m.extra || 0}</span>
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent)' }}>
+                        {m.total}
                       </td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{mealCost.toFixed(2)}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)' }}>₹{chefCost.toFixed(2)}</td>

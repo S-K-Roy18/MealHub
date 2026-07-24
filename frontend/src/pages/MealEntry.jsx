@@ -19,7 +19,7 @@ export default function MealEntry() {
     const mems = res.data.mess.members || [];
     setMembers(mems);
     const initial = {};
-    mems.forEach(m => { initial[m._id] = { lunch: false, dinner: false }; });
+    mems.forEach(m => { initial[m._id] = { lunch: false, dinner: false, extra: 0 }; });
     setEntries(initial);
   };
 
@@ -29,18 +29,18 @@ export default function MealEntry() {
       const res = await api.get(`/meal/date/${date}`);
       if (res.data.meal) {
         const map = {};
-        res.data.meal.entries.forEach(e => {
-          const id = e.memberId?._id || e.memberId;
-          map[id] = { lunch: e.lunch, dinner: e.dinner };
-        });
+          res.data.meal.entries.forEach(e => {
+            const id = e.memberId?._id || e.memberId;
+            map[id] = { lunch: e.lunch, dinner: e.dinner, extra: e.extra || 0 };
+          });
         setEntries(prev => {
           const next = {};
-          members.forEach(m => { next[m._id] = map[m._id] || { lunch: false, dinner: false }; });
+          members.forEach(m => { next[m._id] = map[m._id] || { lunch: false, dinner: false, extra: 0 }; });
           return next;
         });
       } else {
         const reset = {};
-        members.forEach(m => { reset[m._id] = { lunch: false, dinner: false }; });
+        members.forEach(m => { reset[m._id] = { lunch: false, dinner: false, extra: 0 }; });
         setEntries(reset);
       }
     } finally {
@@ -55,6 +55,14 @@ export default function MealEntry() {
     }));
   };
 
+  const updateExtra = (memberId, count) => {
+    const val = parseInt(count) || 0;
+    setEntries(prev => ({
+      ...prev,
+      [memberId]: { ...prev[memberId], extra: val >= 0 ? val : 0 }
+    }));
+  };
+
   const handleSubmit = async () => {
     setLoading(true); setError(''); setSuccess('');
     try {
@@ -62,6 +70,7 @@ export default function MealEntry() {
         memberId: m._id,
         lunch: entries[m._id]?.lunch || false,
         dinner: entries[m._id]?.dinner || false,
+        extra: entries[m._id]?.extra || 0,
       }));
       await api.post('/meal', { date, entries: payload });
       setSuccess('✅ Meal entry saved!');
@@ -87,6 +96,7 @@ export default function MealEntry() {
 
   const totalLunch = Object.values(entries).filter(e => e.lunch).length;
   const totalDinner = Object.values(entries).filter(e => e.dinner).length;
+  const totalExtra = Object.values(entries).reduce((sum, e) => sum + (e.extra || 0), 0);
 
   return (
     <div className="fade-in">
@@ -133,7 +143,7 @@ export default function MealEntry() {
               </thead>
               <tbody>
                 {members.map(m => {
-                  const e = entries[m._id] || { lunch: false, dinner: false };
+                  const e = entries[m._id] || { lunch: false, dinner: false, extra: 0 };
                   const total = (e.lunch ? 1 : 0) + (e.dinner ? 1 : 0);
                   return (
                     <tr key={m._id}>
@@ -171,6 +181,59 @@ export default function MealEntry() {
                   <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--warning)' }}>{totalLunch} lunches</td>
                   <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--info)' }}>{totalDinner} dinners</td>
                   <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent)' }}>{totalLunch + totalDinner} meals</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Extra Meal Table */}
+      <div className="card mb-16">
+        <h3 style={{ marginBottom: '16px' }}>Extra Meals</h3>
+        {fetching ? (
+          <div className="loading-container"><div className="spinner" /></div>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th style={{ textAlign: 'center' }}>🎉 Extra Meals</th>
+                  <th style={{ textAlign: 'center' }}>Total (Reg + Extra)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map(m => {
+                  const e = entries[m._id] || { lunch: false, dinner: false, extra: 0 };
+                  const total = (e.lunch ? 1 : 0) + (e.dinner ? 1 : 0) + (e.extra || 0);
+                  return (
+                    <tr key={m._id}>
+                      <td style={{ fontWeight: 600 }}>{m.username}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                          min="0"
+                          value={e.extra === undefined ? 0 : e.extra}
+                          onChange={(ev) => updateExtra(m._id, ev.target.value)}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{ fontWeight: 700, color: total > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
+                          {total}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: 'var(--bg-secondary)' }}>
+                  <td style={{ fontWeight: 700 }}>Total</td>
+                  <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--success)' }}>{totalExtra} extra meals</td>
+                  <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent)' }}>{totalLunch + totalDinner + totalExtra} total</td>
                 </tr>
               </tfoot>
             </table>

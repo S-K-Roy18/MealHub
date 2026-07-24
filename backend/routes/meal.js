@@ -67,10 +67,15 @@ router.get('/', auth, requireMess, async (req, res) => {
         const id = entry.memberId?._id?.toString() || entry.memberId?.toString();
         if (!id) continue;
         if (!memberTotals[id]) {
-          memberTotals[id] = { memberId: entry.memberId, lunch: 0, dinner: 0, total: 0 };
+          memberTotals[id] = { memberId: entry.memberId, lunch: 0, dinner: 0, extra: 0, total: 0 };
         }
         if (entry.lunch) { memberTotals[id].lunch++; memberTotals[id].total++; totalMessMeals++; }
         if (entry.dinner) { memberTotals[id].dinner++; memberTotals[id].total++; totalMessMeals++; }
+        if (entry.extra) {
+          memberTotals[id].extra += entry.extra;
+          memberTotals[id].total += entry.extra;
+          totalMessMeals += entry.extra;
+        }
       }
     }
 

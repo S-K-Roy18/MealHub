@@ -117,13 +117,20 @@ export default function MealTracking() {
                         });
                         const L = entry?.lunch;
                         const D = entry?.dinner;
+                        const E = entry?.extra || 0;
                         return (
                           <td key={m._id} style={{ textAlign: 'center' }}>
-                            {(L || D) ? (
-                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', justifyContent: 'center', gap: '2px' }}>
+                            {(L || D || E > 0) ? (
+                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px' }}>
                                 <span>{L ? '☀️L' : '—'}</span>
                                 <span style={{ opacity: 0.4 }}>,</span>
                                 <span>{D ? '🌙D' : '—'}</span>
+                                {E > 0 && (
+                                  <>
+                                    <span style={{ opacity: 0.4 }}>|</span>
+                                    <span style={{ color: 'var(--success)' }}>+{E} Ext</span>
+                                  </>
+                                )}
                               </div>
                             ) : (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
@@ -146,7 +153,7 @@ export default function MealTracking() {
             <div className="table-wrapper">
               <table>
                 <thead>
-                  <tr><th>Member</th><th>Lunches</th><th>Dinners</th><th>Total Meals</th></tr>
+                  <tr><th>Member</th><th>Lunches</th><th>Dinners</th><th>Extra</th><th>Total Meals</th></tr>
                 </thead>
                 <tbody>
                   {members.map(m => {
@@ -156,6 +163,7 @@ export default function MealTracking() {
                         <td style={{ fontWeight: 600 }}>{m.username}</td>
                         <td><span className="badge badge-warning">{t.lunch || 0}</span></td>
                         <td><span className="badge badge-info">{t.dinner || 0}</span></td>
+                        <td><span className="badge badge-success">{t.extra || 0}</span></td>
                         <td><span style={{ fontWeight: 700, color: 'var(--accent)' }}>{t.total || 0}</span></td>
                       </tr>
                     );
@@ -163,7 +171,7 @@ export default function MealTracking() {
                 </tbody>
                 <tfoot>
                   <tr style={{ background: 'var(--bg-secondary)' }}>
-                    <td style={{ fontWeight: 700 }} colSpan={3}>Total Mess Meals</td>
+                    <td style={{ fontWeight: 700 }} colSpan={4}>Total Mess Meals</td>
                     <td><span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent)' }}>{totalMessMeals}</span></td>
                   </tr>
                 </tfoot>
